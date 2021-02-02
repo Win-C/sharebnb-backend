@@ -3,6 +3,8 @@ import os
 from flask import Flask, render_template, request, flash, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
+from flask_jwt import JWT, jwt_required, current_identity
+from werkzeug.security import safe_str_cmp
 
 # from forms import UserAddForm, UserEditForm, LoginForm, MessageForm
 from models import db, connect_db, User, Message, Listing
@@ -24,6 +26,13 @@ toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
 
+#####################
+# Testing JWT
+@app.route('/protected')
+@jwt_required()
+def protected():
+    return '%s' % current_identity
+
 
 ##############################################################################
 # User signup/login/logout
@@ -32,36 +41,30 @@ connect_db(app)
 def add_user_to_g():
     """If we're logged in, add curr user to Flask global."""
 
-    if CURR_USER_KEY in session:
-        g.user = User.query.get(session[CURR_USER_KEY])
-
+    # if CURR_USER_KEY in session:
+    #     g.user = User.query.get(session[CURR_USER_KEY])
+    if request.header.get("authorization", None):
+        # JWT verify the Bearer token 
+        print("set g.user")
     else:
         g.user = None
 
 
 def do_login(user):
-    """Log in user."""
+    """Log in user by returning token for future auth checking."""
 
-    session[CURR_USER_KEY] = user.id
-
-
-def do_logout():
-    """Logout user."""
-
-    if CURR_USER_KEY in session:
-        del session[CURR_USER_KEY]
+    jwt = JWT(app, User.authenticate, User.identity)
+    return (jsonify(token=jwt), 200)
 
 
-@app.route('/signup', methods=["GET", "POST"])
+@app.route('/signup', methods=["POST"])
 def signup():
     """Handle user signup.
+    TODO: Get basic signup/etc done
+    Create new user and add to DB. Returns a JWT token which can be used to authenticate 
+    further requests,  { status_code: 201, token }
 
-    Create new user and add to DB. Redirect to home page.
-
-    If form not valid, present form.
-
-    If the there already is a user with that username: flash message
-    and re-present form.
+    If form not valid, returns JSON error messages like,  { status_code: 404, errors }
     """
     if CURR_USER_KEY in session:
         del session[CURR_USER_KEY]
@@ -79,14 +82,18 @@ def signup():
 
         except IntegrityError as e:
             flash("Username already taken", 'danger')
-            return render_template('users/signup.html', form=form)
+            errors = ["Username already taken"]
+            return (jsonify(errors=errors), 400)
 
-        do_login(user)
+        return do_login(user)
 
-        return redirect("/")
 
     else:
-        return render_template('users/signup.html', form=form)
+        errors = []
+        for field in form:
+            for error in field.errors:
+                errors.push(error)
+        return(jsonify(errors=errors), 400)
 
 
 @app.route('/login', methods=["GET", "POST"])

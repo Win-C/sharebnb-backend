@@ -8,7 +8,7 @@ from flask_sqlalchemy import SQLAlchemy
 bcrypt = Bcrypt()
 db = SQLAlchemy()
 
-
+# TODO: Replace fields etc.
 class User(db.Model):
     """User in the system."""
 
@@ -54,6 +54,12 @@ class User(db.Model):
         nullable=False,
     )
 
+    is_admin = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=True
+    )
+
     messages = db.relationship('Message', order_by='Message.timestamp.desc()')
 
     def __repr__(self):
@@ -97,6 +103,13 @@ class User(db.Model):
                 return user
 
         return False
+
+    @classmethod
+    def identity(cls, payload):
+        """ Identifies user from JWT payload """
+
+        username = payload['username']
+        return cls.query.filter_by(username=username).first()
 
 class Message(db.Model):
     """An individual message ("warble")."""
