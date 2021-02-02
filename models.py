@@ -5,6 +5,7 @@ from datetime import datetime
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 
+# TODO: reference to actual S3 bucket
 DEFAULT_USER_IMAGE = "/static/images/default-pic.png"
 DEFAULT_LOCATION_IMAGE = "/static/images/default-pic.png"
 
@@ -185,6 +186,18 @@ class Listing(db.Model):
         primary_key=True,
     )
 
+    title = db.Column(
+        db.Text,
+        nullable=False,
+        default=DEFAULT_LOCATION_IMAGE,
+    )
+
+    description = db.Column(
+        db.Text,
+        nullable=False,
+        default="",
+    )
+
     photo = db.Column(
         db.Text,
         nullable=False,
@@ -196,16 +209,14 @@ class Listing(db.Model):
         nullable=False,
     )
 
-    title = db.Column(
-        db.Text,
+    latitude = db.Column(
+        db.Float,
         nullable=False,
-        default=DEFAULT_LOCATION_IMAGE,
     )
 
-    description = db.Column(
-        db.Text,
+    longitude = db.Column(
+        db.Float,
         nullable=False,
-        default="",
     )
 
     beds = db.Column(
@@ -220,16 +231,6 @@ class Listing(db.Model):
 
     bathrooms = db.Column(
         db.Integer,
-        nullable=False,
-    )
-
-    latitude = db.Column(
-        db.Float,
-        nullable=False,
-    )
-
-    longitude = db.Column(
-        db.Float,
         nullable=False,
     )
 
