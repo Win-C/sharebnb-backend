@@ -5,18 +5,27 @@ from datetime import datetime
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 
+DEFAULT_USER_IMAGE = "/static/images/default-pic.png"
+DEFAULT_LOCATION_IMAGE = "/static/images/default-pic.png"
+
 bcrypt = Bcrypt()
 db = SQLAlchemy()
 
-# TODO: Replace fields etc.
+
 class User(db.Model):
     """User in the system."""
 
     __tablename__ = 'users'
 
-    id = db.Column(
-        db.Integer,
+    username = db.Column(
+        db.String(length=50),
         primary_key=True,
+    )
+
+    bio = db.Column(
+        db.Text,
+        nullable=False,
+        default="",
     )
 
     email = db.Column(
@@ -25,24 +34,20 @@ class User(db.Model):
         unique=True,
     )
 
-    username = db.Column(
-        db.Text,
+    first_name = db.Column(
+        db.String(length=50),
         nullable=False,
-        unique=True,
+    )
+
+    last_name = db.Column(
+        db.String(length=50),
+        nullable=False,
     )
 
     image_url = db.Column(
         db.Text,
-        default="/static/images/default-pic.png",
-    )
-
-    header_image_url = db.Column(
-        db.Text,
-        default="/static/images/warbler-hero.jpg"
-    )
-
-    bio = db.Column(
-        db.Text,
+        nullable=False,
+        default=DEFAULT_USER_IMAGE,
     )
 
     location = db.Column(
@@ -57,16 +62,26 @@ class User(db.Model):
     is_admin = db.Column(
         db.Boolean,
         nullable=False,
-        default=True
+        default=False
     )
 
     messages = db.relationship('Message', order_by='Message.timestamp.desc()')
 
     def __repr__(self):
-        return f"<User #{self.id}: {self.username}, {self.email}>"
+        return f"""<User #{self.username}:
+                    {self.first_name},
+                    {self.last_name},
+                    {self.email}>"""
 
     @classmethod
-    def signup(cls, username, email, password, image_url):
+    def signup(cls,
+               username,
+               first_name,
+               last_name,
+               email,
+               password,
+               image_url=DEFAULT_USER_IMAGE,
+               ):
         """Sign up user.
 
         Hashes password and adds user to system.
@@ -76,6 +91,8 @@ class User(db.Model):
 
         user = User(
             username=username,
+            first_name=first_name,
+            last_name=last_name,
             email=email,
             password=hashed_pwd,
             image_url=image_url,
@@ -111,8 +128,9 @@ class User(db.Model):
         username = payload['username']
         return cls.query.filter_by(username=username).first()
 
+
 class Message(db.Model):
-    """An individual message ("warble")."""
+    """An individual message."""
 
     __tablename__ = 'messages'
 
@@ -121,22 +139,117 @@ class Message(db.Model):
         primary_key=True,
     )
 
-    text = db.Column(
-        db.String(140),
+    body = db.Column(
+        db.Text,
         nullable=False,
     )
 
-    timestamp = db.Column(
+    sent_at = db.Column(
         db.DateTime,
         nullable=False,
         default=datetime.utcnow(),
     )
 
-    user_id = db.Column(
-        db.Integer,
-        db.ForeignKey('users.id', ondelete='CASCADE'),
+    read_at = db.Column(
+        db.DateTime,
+    )
+
+    to_user = db.Column(
+        db.String,
+        db.ForeignKey('users.username', ondelete='CASCADE'),
         nullable=False,
     )
+
+    from_user = db.Column(
+        db.String,
+        db.ForeignKey('users.username', ondelete='CASCADE'),
+        nullable=False,
+    )
+
+    def __repr__(self):
+        return f"""<Message #{self.id}:
+                    {self.to_user},
+                    {self.from_user},
+                    {self.sent_at}>"""
+
+    user = db.relationship('User')
+
+
+class Listing(db.Model):
+    """An individual listing."""
+
+    __tablename__ = 'listings'
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+    )
+
+    photo = db.Column(
+        db.Text,
+        nullable=False,
+        default=DEFAULT_LOCATION_IMAGE,
+    )
+
+    price = db.Column(
+        db.Numeric(10, 2),
+        nullable=False,
+    )
+
+    title = db.Column(
+        db.Text,
+        nullable=False,
+        default=DEFAULT_LOCATION_IMAGE,
+    )
+
+    description = db.Column(
+        db.Text,
+        nullable=False,
+        default="",
+    )
+
+    beds = db.Column(
+        db.Integer,
+        nullable=False,
+    )
+
+    rooms = db.Column(
+        db.Integer,
+        nullable=False,
+    )
+
+    bathrooms = db.Column(
+        db.Integer,
+        nullable=False,
+    )
+
+    latitude = db.Column(
+        db.Float,
+        nullable=False,
+    )
+
+    longitude = db.Column(
+        db.Float,
+        nullable=False,
+    )
+
+    created_by = db.Column(
+        db.String,
+        db.ForeignKey('users.username', ondelete='CASCADE'),
+        nullable=False,
+    )
+
+    rented_by = db.Column(
+        db.String,
+        db.ForeignKey('users.username', ondelete='CASCADE'),
+    )
+
+    def __repr__(self):
+        return f"""<Listing #{self.id}:
+                    {self.price},
+                    {self.created_by},
+                    {self.latitude},
+                    {self.longitude}>"""
 
     user = db.relationship('User')
 
