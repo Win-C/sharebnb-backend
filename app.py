@@ -60,7 +60,7 @@ def do_login(user):
 @app.route('/signup', methods=["POST"])
 def signup():
     """Handle user signup.
-    TODO: Get basic signup/etc done
+    TODO: Have working WTForm for validation
     Create new user and add to DB. Returns a JWT token which can be used to authenticate 
     further requests,  { status_code: 201, token }
 
