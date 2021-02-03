@@ -3,9 +3,15 @@ import os
 from flask import Flask, request, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
-from flask_jwt import JWT, jwt_required, current_identity
+# from flask_jwt import JWT, jwt_required, current_identity
+from flask_jwt_extended import (
+    JWTManager, jwt_required, create_access_token,
+    get_jwt_identity, get_jwt_claims
+)
 
-from forms import UserSignUpForm, UserLoginForm, ListingForm, ListingSearchForm
+from forms import (
+    UserSignUpForm, UserLoginForm, ListingForm, ListingSearchForm
+)
 from models import db, connect_db, User, Listing
 
 CURR_USER_KEY = "curr_user"
@@ -21,6 +27,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', "shhhhh!")
+jwt = JWTManager(app)
 
 app.config['WTF_CSRF_ENABLED'] = False
 
@@ -28,13 +36,37 @@ toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
 
-#####################
-# Testing JWT
-@app.route('/protected')
-@jwt_required()
-def protected():
-    return '%s' % current_identity
+##############################################################################
+# JWT
 
+# Create a function that will be called whenever create_access_token
+# is used. It will take whatever object is passed into the
+# create_access_token method, and lets us define what custom claims
+# should be added to the access token.
+@jwt.user_claims_loader
+def add_claims_to_access_token(user):
+    return {
+        'username': user.username,
+        'is_admin': user.is_admin,
+        }
+
+# Create a function that will be called whenever create_access_token
+# is used. It will take whatever object is passed into the
+# create_access_token method, and lets us define what the identity
+# of the access token should be.
+@jwt.user_identity_loader
+def user_identity_lookup(user):
+    return user.username
+
+# test of JWT for protected routes
+@app.route('/protected', methods=['GET'])
+@jwt_required
+def protected():
+    ret = {
+        'username': get_jwt_identity(),
+        'is_admin': get_jwt_claims()['is_admin']
+    }
+    return jsonify(ret), 200
 
 ##############################################################################
 # User signup/login/logout
@@ -54,12 +86,10 @@ def protected():
 
 def do_login(user):
     """Log in user by returning token for future auth checking.
-    TODO: JWT currently not working, will revisit after
     """
 
-    # jwt = JWT(app, User.authenticate, User.identity)
-    jwt = "okay"
-    return (jsonify(token=jwt), 200)
+    access_token = create_access_token(identity=user)
+    return (jsonify(token=access_token), 200)
 
 
 @app.route('/signup', methods=["POST"])
@@ -171,6 +201,7 @@ def user_show(username):
 # General listing routes:
 
 @app.route('/listings')
+@jwt_required
 def listings_list():
     """ Show listings based on query parameters
     Auth required: none
@@ -211,7 +242,9 @@ def listings_list():
     else:
         return (jsonify(errors=["Bad request"]), 400)
 
+
 @app.route('/listings/<int:listing_id>')
+@jwt_required
 def listing_show(listing_id):
     """ Show a listing
 
@@ -224,7 +257,9 @@ def listing_show(listing_id):
     else:
         return (jsonify(listing=listing.serialize(isDetailed=True)), 200)
 
+
 @app.route('/listings', methods=["POST"])
+@jwt_required
 def listing_create():
     """
     Create a new listing.
