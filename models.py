@@ -1,6 +1,6 @@
 """SQLAlchemy models for sharebnb."""
 
-from datetime import datetime
+# from datetime import datetime
 
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
@@ -67,6 +67,9 @@ class User(db.Model):
     )
 
     # messages = db.relationship('Message', order_by='Message.timestamp.desc()')
+
+    created_listings = db.relationship('Listing', foreign_keys='Listing.created_by')
+    rented_listings = db.relationship('Listing', foreign_keys='Listing.rented_by')
 
     # TODO: Add toMessages and fromMessages relationship of User to another username
 
@@ -269,7 +272,7 @@ class Listing(db.Model):
                     {self.latitude},
                     {self.longitude}>"""
 
-    # user = db.relationship('User', backref="listing")
+    user = db.relationship('User')
 
     @classmethod
     def find_all(cls, inputs):

@@ -1,6 +1,6 @@
 TODO List:
 - Models / database
-    - Make seed files
+    - ~~Make seed files~~
     - Build out and check db relationships
     - Check queries work
 - App / routes
@@ -8,6 +8,7 @@ TODO List:
     - incorporate JWTs
     - test authorization: login, signup
     - authentications on protected routes
+    - build out upload files app / capabilities
     - build out messages endpoints (lower priority)
 - Database storage / S3
     - Create bucket sharebnb
