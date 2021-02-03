@@ -68,6 +68,9 @@ class User(db.Model):
 
     messages = db.relationship('Message', order_by='Message.timestamp.desc()')
 
+    # TODO: Add toMessages and fromMessages relationship of User to another username
+
+
     def __repr__(self):
         return f"""<User #{self.username}:
                     {self.first_name},
@@ -128,6 +131,7 @@ class User(db.Model):
 
         username = payload['username']
         return cls.query.filter_by(username=username).first()
+    
 
 
 class Message(db.Model):

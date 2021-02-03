@@ -6,8 +6,9 @@ from sqlalchemy.exc import IntegrityError
 from flask_jwt import JWT, jwt_required, current_identity
 from werkzeug.security import safe_str_cmp
 
-# from forms import UserAddForm, UserEditForm, LoginForm, MessageForm
+from forms import UserSignUpForm, UserLoginForm, MessageForm, ListingForm, ListingSearchForm
 from models import db, connect_db, User, Message, Listing
+from decimal import *
 
 CURR_USER_KEY = "curr_user"
 
@@ -22,6 +23,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
+
+app.config['WTF_CSRF_ENABLED'] = False
+
 toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
@@ -66,28 +70,27 @@ def signup():
 
     If form not valid, returns JSON error messages like,  { status_code: 404, errors }
     """
-    if CURR_USER_KEY in session:
-        del session[CURR_USER_KEY]
-    form = UserAddForm()
+  
+    user_data = request.json.get("user")
+    form = UserSignUpForm(data=user_data)
 
-    if form.validate_on_submit():
+    if form.validate():
         try:
             user = User.signup(
                 username=form.username.data,
                 password=form.password.data,
+                first_name=form.first_name.data,
+                last_name=form.last_name.data,
                 email=form.email.data,
                 image_url=form.image_url.data or User.image_url.default.arg,
             )
             db.session.commit()
 
         except IntegrityError as e:
-            flash("Username already taken", 'danger')
             errors = ["Username already taken"]
             return (jsonify(errors=errors), 400)
 
         return do_login(user)
-
-
     else:
         errors = []
         for field in form:
@@ -98,153 +101,160 @@ def signup():
 
 @app.route('/login', methods=["GET", "POST"])
 def login():
-    """Handle user login."""
+    """Handle user login.
+    Validates user credentials with form. Returns JWT token if authenticated,
+    otherwise, returns error messages
+    """
 
-    form = LoginForm()
+    user_data = request.json.get("user")
+    form = UserLoginForm(data=user_data)
 
-    if form.validate_on_submit():
+    if form.validate():
         user = User.authenticate(form.username.data,
                                  form.password.data)
 
         if user:
-            do_login(user)
-            flash(f"Hello, {user.username}!", "success")
-            return redirect("/")
+            return do_login(user)
 
-        flash("Invalid credentials.", 'danger')
-
-    return render_template('users/login.html', form=form)
-
-
-@app.route('/logout')
-def logout():
-    """Handle logout of user."""
-
-    do_logout()
-
-    flash("You have successfully logged out.", 'success')
-    return redirect("/login")
-
+        return (jsonify(errors=["Invalid credentials."]), 401)
+    else:
+        errors = []
+        for field in form:
+            for error in field.errors:
+                errors.push(error)
+        return(jsonify(errors=errors), 400)
+    
 
 ##############################################################################
 # General user routes:
 
-@app.route('/users')
-def users_list():
-    """Page with listing of users.
-
-    Can take a 'q' param in querystring to search by that username.
-    """
-
-    search = request.args.get('q')
-
-    if not search:
-        users = User.query.all()
-    else:
-        users = User.query.filter(User.username.like(f"%{search}%")).all()
-
-    return render_template('users/index.html', users=users)
-
-
-@app.route('/users/<int:user_id>')
-def show_user(user_id):
+@app.route('/users/<:username>')
+def user_show(username):
     """Show user profile."""
 
-    user = User.query.get_or_404(user_id)
+    user = User.query.get(username)
     # snagging messages in order from the database;
     # user.messages won't be in order by default
-    messages = (Message
-                .query
-                .filter(Message.user_id == user_id)
-                .order_by(Message.timestamp.desc())
-                .limit(100)
-                .all())
-    return render_template('users/show.html', user=user, messages=messages)
+    # messages = (Message
+    #             .query
+    #             .filter(Message.user_id == user_id)
+    #             .order_by(Message.timestamp.desc())
+    #             .limit(100)
+    #             .all())
+    user_obj = {
+        "username": user.username,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "image_url": user.image_url,
+        "email": user.email,
+        "bio": user.bio,
+        "location": user.location
+    }
+    return (jsonify(user=user_obj), 200)
 
 
-@app.route('/users/edit', methods=["GET", "POST"])
-def user_edit():
-    """Update profile for current user."""
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
-
-    user = g.user
-    form = UserEditForm(obj=user)
-
-    if form.validate_on_submit():
-        if User.authenticate(user.username, form.password.data):
-            user.username = form.username.data
-            user.email = form.email.data
-            user.image_url = form.image_url.data or "/static/images/default-pic.png"
-            user.header_image_url = form.header_image_url.data or "/static/images/warbler-hero.jpg"
-            user.bio = form.bio.data
-
-            db.session.commit()
-            return redirect(f"/users/{user.id}")
-
-        flash("Wrong password, please try again.", 'danger')
-
-    return render_template('users/edit.html', form=form, user_id=user.id)
-
-
-@app.route('/users/delete', methods=["POST"])
-def user_delete():
-    """Delete user."""
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
-
-    do_logout()
-
-    db.session.delete(g.user)
-    db.session.commit()
-
-    return redirect("/signup")
+# NOTE: No edit or delete user routes at the moment, will add if needed
 
 ##############################################################################
+TODO: Add Message routes after auth and listing routes work
 # Messages routes:
 
-@app.route('/messages', methods=["GET"])
-def messages_list():
+# @app.route('/messages/<:from_username>/<:to_username>', methods=["GET"])
+# def messages_list():
 
-@app.route('/messages/<int:message_id>', methods=["GET"])
-def message_show(message_id):
-    """Show a message."""
+# @app.route('/messages/new', methods=["GET", "POST"])
+# def message_add():
 
-    msg = Message.query.get(message_id)
-    return render_template('messages/show.html', message=msg)
-
-@app.route('/messages/new', methods=["GET", "POST"])
-def message_add():
-
-@app.route('/messages/<int:message_id>/delete', methods=["POST"])
-def message_destroy(message_id):
-    """Delete a message."""
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
-
-    msg = Message.query.get(message_id)
-    db.session.delete(msg)
-    db.session.commit()
-
-    return redirect(f"/users/{g.user.id}")
 
 ##############################################################################
-# General user routes:
+# General listing routes:
 
 @app.route('/listings')
 def listings_list():
+    """ Show listings based on query parameters
+    Auth required: none
+    """
+
+    def convert_inputs(data):
+        output = {}
+        max_price = data.get("max_price", None)
+        longitude = data.get("longitude", None)
+        latitude = data.get("latitude", None)
+        beds = data.get("beds", None)
+        bathrooms = data.get("bathrooms", None)
+
+        if max_price:
+            output["max_price"] = int(max_price)
+        
+        if longitude:
+            output["longitude"] = float(longitude)
+        
+        if latitude:
+            output["latitude"] = float(latitude)
+        
+        if beds:
+            output["beds"] = int(beds.split(".")[0])
+
+        if bathrooms:
+            output["bathrooms"] = int(bathrooms.split(".")[0])
+        
+        return output
+        
+    inputs = convert_inputs(request.args)
+    form = ListingSearchForm(data=inputs)
+    if form.validate():
+        listings = Listing.find_all(inputs)
+        return (jsonify(listings=listings), 200)
+    else:
+        return (jsonify(errors=["Bad request"]), 400)
 
 @app.route('/listings/<int:listing_id>')
 def listing_show(listing_id):
+    """ Show a listing
+
+    Auth required: none
+    """ 
+
+    listing = Listing.query.get(listing_id)
+    if not listing: 
+        return (jsonify(errors=["Listing does not exist"]), 404)
+    else:
+        return (jsonify(listing=listing), 200)
 
 @app.route('/listings', methods=["POST"])
 def listing_create():
+    """ 
+    Create a new listing. 
+
+    Auth required: admin or logged in user
+    TODO: Create a listing in model, then commit to db or handle errors otherwise with json messages
+    """
+    listing_data = request.json.get("listing")
+    form = ListingForm(data=listing_data)
+
+    # if form.validate():
+    #     try:
+    #         user = Listing.signup(
+    #             username=form.username.data,
+    #             password=form.password.data,
+    #             first_name=form.first_name.data,
+    #             last_name=form.last_name.data,
+    #             email=form.email.data,
+    #             image_url=form.image_url.data or User.image_url.default.arg,
+    #         )
+    #         db.session.commit()
+
+    #     except IntegrityError as e:
+    #         errors = ["Username already taken"]
+    #         return (jsonify(errors=errors), 400)
+
+    #     return do_login(user)
+    # else:
+    #     errors = []
+    #     for field in form:
+    #         for error in field.errors:
+    #             errors.push(error)
+    #     return(jsonify(errors=errors), 400)
 
 @app.route('/listings/:id', methods=["PATCH"])
 def listing_edit():

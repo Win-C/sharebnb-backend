@@ -47,3 +47,14 @@ class ListingForm(FlaskForm):
     beds = IntegerField('beds', validators=[DataRequired()])
     rooms = IntegerField('rooms', validators=[DataRequired()])
     bathrooms = IntegerField('bathrooms', validators=[DataRequired()])
+
+
+class ListingSearchForm(FlaskForm):
+    """ Listing query args validator form """
+
+    max_price = IntegerField('max_price')
+    longitude = FloatField('longitude')
+    latitude = FloatField('latitude')
+    beds = IntegerField('beds')
+    bathrooms = IntegerField('bathrooms')
+    
