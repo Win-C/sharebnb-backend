@@ -3,7 +3,6 @@ import os
 from flask import Flask, request, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
-# from flask_jwt import JWT, jwt_required, current_identity
 from flask_jwt_extended import (
     JWTManager, jwt_required, create_access_token,
     get_jwt_identity, get_jwt_claims
@@ -39,10 +38,9 @@ connect_db(app)
 ##############################################################################
 # JWT
 
-# Create a function that will be called whenever create_access_token
-# is used. It will take whatever object is passed into the
-# create_access_token method, and lets us define what custom claims
-# should be added to the access token.
+# Called whenever create_access_token is used. Takes in object passed into
+# create_access_token method. Defines what custom claims should be added to
+# access token.
 @jwt.user_claims_loader
 def add_claims_to_access_token(user):
     return {
@@ -50,10 +48,8 @@ def add_claims_to_access_token(user):
         'is_admin': user.is_admin,
         }
 
-# Create a function that will be called whenever create_access_token
-# is used. It will take whatever object is passed into the
-# create_access_token method, and lets us define what the identity
-# of the access token should be.
+# Called whenever create_access_token is used. Takes in object passed into
+# create_access_token method. Defines what identity of access token should be.
 @jwt.user_identity_loader
 def user_identity_lookup(user):
     return user.username
@@ -107,15 +103,7 @@ def signup():
 
     if form.validate():
         try:
-            user = User.signup(
-                username=form.username.data,
-                password=form.password.data,
-                first_name=form.first_name.data,
-                last_name=form.last_name.data,
-                email=form.email.data,
-                location=form.location.data,
-                image_url=form.image_url.data or User.image_url.default.arg,
-            )
+            user = User.signup(form)
             db.session.commit()
             return do_login(user)
         except IntegrityError as e:
@@ -172,16 +160,8 @@ def user_show(username):
     #             .order_by(Message.timestamp.desc())
     #             .limit(100)
     #             .all())
-    user_obj = {
-        "username": user.username,
-        "first_name": user.first_name,
-        "last_name": user.last_name,
-        "image_url": user.image_url,
-        "email": user.email,
-        "bio": user.bio,
-        "location": user.location
-    }
-    return (jsonify(user=user_obj), 200)
+
+    return (jsonify(user=user.serialize()), 200)
 
 @app.route('/users/<username>/edit', methods=["PATCH"])
 def user_edit(username):
@@ -205,9 +185,7 @@ def user_edit(username):
                 errors.append(error)
         return(jsonify(errors=errors), 400)
 
-
-
-# NOTE: No edit or delete user routes at the moment, will add if needed
+# No delete user routes at the moment, need to add
 
 ##############################################################################
 # TODO: Add Message routes after auth and listing routes work
@@ -219,8 +197,6 @@ def user_edit(username):
 
 # @app.route('/messages/new', methods=["GET", "POST"])
 # def message_add():
-
-
 
 ##############################################################################
 # General listing routes:
@@ -261,7 +237,6 @@ def listings_list():
     form = ListingSearchForm(data=inputs)
     if form.validate():
         listings = Listing.find_all(inputs).all()
-        print("Listings: ", listings, "type :", type(listings))
         serialized = [listing.serialize(isDetailed=False) for listing in listings]
         return (jsonify(listings=serialized), 200)
     else:
@@ -277,10 +252,7 @@ def listing_show(listing_id):
     """
 
     listing = Listing.query.get_or_404(listing_id)
-    if not listing:
-        return (jsonify(errors=["Listing does not exist"]), 404)
-    else:
-        return (jsonify(listing=listing.serialize(isDetailed=True)), 200)
+    return (jsonify(listing=listing.serialize(isDetailed=True)), 200)
 
 
 @app.route('/listings', methods=["POST"])
@@ -295,18 +267,7 @@ def listing_create():
     form = ListingForm(data=listing_data)
 
     if form.validate():
-        listing = Listing.create(
-            title=form.title.data,
-            description=form.description.data,
-            photo=form.photo.data or Listing.photo.default.arg,
-            price=form.price.data,
-            longitude=form.longitude.data,
-            latitude=form.latitude.data,
-            beds=form.beds.data,
-            rooms=form.rooms.data,
-            bathrooms=form.bathrooms.data,
-            created_by=form.created_by.data
-        )
+        listing = Listing.create(form)
         db.session.commit()
         # TODO: reevaluate error with a try and except later
         return (jsonify(listing=listing.serialize(isDetailed=True)), 201)
@@ -317,7 +278,6 @@ def listing_create():
                 errors.append(error)
         return(jsonify(errors=errors), 400)
 
-# TODO: 
 # @app.route('/listings/:id', methods=["PATCH"])
 # def listing_edit():
 

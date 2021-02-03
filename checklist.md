@@ -8,8 +8,12 @@ TODO List:
     - ~~incorporate JWTs~~
     - ~~test authorization: login, signup~~
     - ~~authentications on protected routes~~
+    - ~~Edit users~~
+    - Edit listings
+    - Delete users / listings
+    - build out messages endpoints
     - build out upload files app / capabilities
-    - build out messages endpoints (lower priority)
+    - set up os.environ
 - Database storage / S3
     - Create bucket sharebnb
 - 

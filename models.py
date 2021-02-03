@@ -29,12 +29,6 @@ class User(db.Model):
         default="",
     )
 
-    email = db.Column(
-        db.Text,
-        nullable=False,
-        unique=True,
-    )
-
     first_name = db.Column(
         db.String(length=50),
         nullable=False,
@@ -42,6 +36,17 @@ class User(db.Model):
 
     last_name = db.Column(
         db.String(length=50),
+        nullable=False,
+    )
+
+    email = db.Column(
+        db.Text,
+        nullable=False,
+        unique=True,
+    )
+
+    password = db.Column(
+        db.Text,
         nullable=False,
     )
 
@@ -54,11 +59,6 @@ class User(db.Model):
     location = db.Column(
         db.Text,
         nullable=False
-    )
-
-    password = db.Column(
-        db.Text,
-        nullable=False,
     )
 
     is_admin = db.Column(
@@ -88,30 +88,22 @@ class User(db.Model):
                     {self.email}>"""
 
     @classmethod
-    def signup(cls,
-               username,
-               first_name,
-               last_name,
-               email,
-               password,
-               image_url=DEFAULT_USER_IMAGE,
-               location=""
-               ):
+    def signup(cls, form):
         """Sign up user.
 
         Hashes password and adds user to system.
         """
 
-        hashed_pwd = bcrypt.generate_password_hash(password).decode('UTF-8')
+        hashed_pwd = bcrypt.generate_password_hash(form.password.data).decode('UTF-8')
 
         user = User(
-            username=username,
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
+            username=form.username.data,
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
+            email=form.email.data,
             password=hashed_pwd,
-            image_url=image_url,
-            location=location
+            image_url=form.image_url.data or DEFAULT_USER_IMAGE,
+            location=form.location.data or "",
         )
 
         db.session.add(user)
@@ -137,37 +129,29 @@ class User(db.Model):
 
         return False
 
-    @classmethod
-    def identity(cls, payload):
-        """ Identifies user from JWT payload """
-
-        username = payload['username']
-        return cls.query.filter_by(username=username).first()
-    
     def serialize(self):
         """ Serialize User object to dictionary """
 
         return {
             "username": self.username,
+            "bio": self.bio,
             "first_name": self.first_name,
             "last_name": self.last_name,
-            "image_url": self.image_url,
             "email": self.email,
-            "bio": self.bio,
+            "image_url": self.image_url,
             "location": self.location,
             "is_admin": self.is_admin
         }
-    
+
     def update(self, form):
         """ Update fields of self if key in form """
 
-        self.first_name = form.first_name.data 
-        self.last_name = form.last_name.data 
-        self.email = form.email.data 
-        self.image_url = form.image_url.data 
-        self.location = form.location.data
         self.bio = form.bio.data
-
+        self.first_name = form.first_name.data
+        self.last_name = form.last_name.data
+        self.email = form.email.data
+        self.image_url = form.image_url.data
+        self.location = form.location.data
 
 
 class Message(db.Model):
@@ -247,12 +231,12 @@ class Listing(db.Model):
         nullable=False,
     )
 
-    latitude = db.Column(
+    longitude = db.Column(
         db.Float,
         nullable=False,
     )
 
-    longitude = db.Column(
+    latitude = db.Column(
         db.Float,
         nullable=False,
     )
@@ -311,39 +295,28 @@ class Listing(db.Model):
         return base_query
 
     @classmethod
-    def create(cls,
-               title,
-               created_by,
-               price,
-               longitude,
-               latitude,
-               beds,
-               rooms,
-               bathrooms,
-               description=None,
-               photo=None
-               ):
+    def create(cls, form):
         """Create listing and adds listing to system."""
 
         listing = Listing(
-            title=title,
-            description=description,
-            created_by=created_by,
-            photo=photo,
-            price=price,
-            longitude=longitude,
-            latitude=latitude,
-            beds=beds,
-            rooms=rooms,
-            bathrooms=bathrooms
+            title=form.title.data,
+            description=form.description.data or None,
+            photo=form.photo.data or None,
+            price=form.price.data,
+            longitude=form.longitude.data,
+            latitude=form.latitude.data,
+            beds=form.beds.data,
+            rooms=form.rooms.data,
+            bathrooms=form.bathrooms.data,
+            created_by=form.created_by.data,
         )
 
         db.session.add(listing)
         return listing
-    
+
     def serialize(self, isDetailed):
-        """ Serialize Listing object to dictionary 
-        price is a Numeric in db, but Decimal is not serializable, 
+        """ Serialize Listing object to dictionary
+        price is a Numeric in db, but Decimal is not serializable,
         so converting to a float beforehand
         """
 
@@ -354,8 +327,8 @@ class Listing(db.Model):
                 "description": self.description,
                 "photo": self.photo,
                 "price": float(self.price),
-                "latitude": self.latitude,
                 "longitude": self.longitude,
+                "latitude": self.latitude,
             }
 
         return {
@@ -364,15 +337,14 @@ class Listing(db.Model):
             "description": self.description,
             "photo": self.photo,
             "price": float(self.price),
-            "latitude": self.latitude,
             "longitude": self.longitude,
+            "latitude": self.latitude,
             "beds": self.beds,
             "rooms": self.rooms,
             "bathrooms": self.bathrooms,
             "created_by": self.created_by,
             "rented_by": self.rented_by
         }
-
 
 
 def connect_db(app):
