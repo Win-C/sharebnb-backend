@@ -10,6 +10,8 @@ from wtforms import (
     FileField,
 )
 
+# TODO: reevalaute form validation
+
 
 class UserSignUpForm(FlaskForm):
     """Form for signing up users."""
@@ -19,7 +21,7 @@ class UserSignUpForm(FlaskForm):
     last_name = StringField('Last name', validators=[DataRequired()])
     email = StringField('E-mail', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[Length(min=6)])
-    image_url = StringField('(Optional) Image URL')
+    image_url = FileField('(Optional) Image URL')
     location = StringField('Location')
 
 
@@ -38,7 +40,7 @@ class UserEditForm(FlaskForm):
     last_name = StringField('Last name')
     email = StringField('E-mail', validators=[Email()])
     password = PasswordField('Password', validators=[Length(min=6)])
-    image_url = StringField('(Optional) Image URL')
+    image_url = FileField('(Optional) Image URL')
     location = StringField('Location')
 
 

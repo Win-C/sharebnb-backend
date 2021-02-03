@@ -1,12 +1,16 @@
 import os
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, url_for
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 from flask_jwt_extended import (
     JWTManager, jwt_required, create_access_token,
     get_jwt_identity, get_jwt_claims
 )
+from werkzeug.utils import secure_filename
+
+UPLOAD_FOLDER = '/path/to/the/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 from forms import (
     UserSignUpForm, UserLoginForm, ListingForm, ListingSearchForm, UserEditForm
@@ -17,6 +21,9 @@ CURR_USER_KEY = "curr_user"
 
 app = Flask(__name__)
 
+# TODO: Maybe delete upload folder
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000
 # Get DB_URI from environ variable (useful for production/testing) or,
 # if not set there, use development local db.
 app.config['SQLALCHEMY_DATABASE_URI'] = (
@@ -34,6 +41,12 @@ app.config['WTF_CSRF_ENABLED'] = False
 toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
+
+
+# Checks that file has allowed extension
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 ##############################################################################
 # JWT
@@ -99,10 +112,16 @@ def signup():
     """
 
     user_data = request.json.get("user")
+    file = request.files['file']
     form = UserSignUpForm(data=user_data)
 
     if form.validate():
         try:
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                # file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            # TODO: save to S3 to bucket and get URL
+            # then assign URL to image_url field in database
             user = User.signup(form)
             db.session.commit()
             return do_login(user)
@@ -160,6 +179,10 @@ def user_show(username):
     #             .order_by(Message.timestamp.desc())
     #             .limit(100)
     #             .all())
+
+    # TODO: serve up user image
+    # connect to S3 bucket to serve up the image
+    # use url_for with S3 path
 
     return (jsonify(user=user.serialize()), 200)
 

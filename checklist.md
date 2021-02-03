@@ -10,7 +10,7 @@ TODO List:
     - ~~authentications on protected routes~~
     - ~~Edit users~~
     - Edit listings
-    - Delete users / listings
+    - Delete users / listings (lower priority)
     - build out messages endpoints
     - build out upload files app / capabilities
     - set up os.environ
