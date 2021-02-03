@@ -289,9 +289,9 @@ class Listing(db.Model):
             if key == 'latitude':
                 base_query = base_query.filter(Listing.latitude == inputs[key])
             if key == 'beds':
-                base_query = base_query.filter(Listing.beds <= inputs[key])
+                base_query = base_query.filter(Listing.beds == inputs[key])
             if key == 'bathrooms':
-                base_query = base_query.filter(Listing.bathrooms <= inputs[key])
+                base_query = base_query.filter(Listing.bathrooms == inputs[key])
 
         return base_query
 
