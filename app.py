@@ -1,12 +1,12 @@
 import os
 
-from flask import Flask, request, session, g, jsonify
+from flask import Flask, request, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 from flask_jwt import JWT, jwt_required, current_identity
 
-from forms import UserSignUpForm, UserLoginForm, MessageForm, ListingForm, ListingSearchForm
-from models import db, connect_db, User, Message, Listing
+from forms import UserSignUpForm, UserLoginForm, ListingForm, ListingSearchForm
+from models import db, connect_db, User, Listing
 
 CURR_USER_KEY = "curr_user"
 
@@ -15,7 +15,7 @@ app = Flask(__name__)
 # Get DB_URI from environ variable (useful for production/testing) or,
 # if not set there, use development local db.
 app.config['SQLALCHEMY_DATABASE_URI'] = (
-    os.environ.get('DATABASE_URL', 'postgres:///sharebnb-dev'))
+    os.environ.get('DATABASE_URL', 'postgres:///sharebnb'))
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
@@ -39,17 +39,17 @@ def protected():
 ##############################################################################
 # User signup/login/logout
 
-@app.before_request
-def add_user_to_g():
-    """If we're logged in, add curr user to Flask global."""
+# @app.before_request
+# def add_user_to_g():
+#     """If we're logged in, add curr user to Flask global."""
 
     # if CURR_USER_KEY in session:
     #     g.user = User.query.get(session[CURR_USER_KEY])
-    if request.header.get("authorization", None):
+    # if request.header.get("authorization", None):
         # JWT verify the Bearer token
-        print("set g.user")
-    else:
-        g.user = None
+    #     print("set g.user")
+    # else:
+    #     g.user = None
 
 
 def do_login(user):
@@ -84,7 +84,7 @@ def signup():
             )
             db.session.commit()
 
-        except IntegrityError as e:
+        except IntegrityError:
             errors = ["Username already taken"]
             return (jsonify(errors=errors), 400)
 
@@ -126,7 +126,7 @@ def login():
 ##############################################################################
 # General user routes:
 
-@app.route('/users/<:username>')
+@app.route('/users/<username>')
 def user_show(username):
     """Show user profile."""
 

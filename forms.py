@@ -1,15 +1,9 @@
 from wtforms.validators import DataRequired, Email, Length
 from flask_wtf import FlaskForm
-from wtforms import StringField,
-PasswordField,
-TextAreaField,
-DecimalField,
-FloatField,
-IntegerField,
-FileField
+from wtforms import StringField, PasswordField, TextAreaField, DecimalField, FloatField, IntegerField, FileField
 
 
-class UserSignupForm(FlaskForm):
+class UserSignUpForm(FlaskForm):
     """Form for signing up users."""
 
     username = StringField('Username', validators=[DataRequired()])
@@ -57,4 +51,3 @@ class ListingSearchForm(FlaskForm):
     latitude = FloatField('latitude')
     beds = IntegerField('beds')
     bathrooms = IntegerField('bathrooms')
-    

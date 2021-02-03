@@ -66,7 +66,7 @@ class User(db.Model):
         default=False
     )
 
-    messages = db.relationship('Message', order_by='Message.timestamp.desc()')
+    # messages = db.relationship('Message', order_by='Message.timestamp.desc()')
 
     # TODO: Add toMessages and fromMessages relationship of User to another username
 
@@ -131,52 +131,52 @@ class User(db.Model):
 
         username = payload['username']
         return cls.query.filter_by(username=username).first()
-    
 
-class Message(db.Model):
-    """An individual message."""
 
-    __tablename__ = 'messages'
+# class Message(db.Model):
+#     """An individual message."""
 
-    id = db.Column(
-        db.Integer,
-        primary_key=True,
-    )
+#     __tablename__ = 'messages'
 
-    body = db.Column(
-        db.Text,
-        nullable=False,
-    )
+#     id = db.Column(
+#         db.Integer,
+#         primary_key=True,
+#     )
 
-    sent_at = db.Column(
-        db.DateTime,
-        nullable=False,
-        default=datetime.utcnow(),
-    )
+#     body = db.Column(
+#         db.Text,
+#         nullable=False,
+#     )
 
-    read_at = db.Column(
-        db.DateTime,
-    )
+#     sent_at = db.Column(
+#         db.DateTime,
+#         nullable=False,
+#         default=datetime.utcnow(),
+#     )
 
-    to_user = db.Column(
-        db.String,
-        db.ForeignKey('users.username', ondelete='CASCADE'),
-        nullable=False,
-    )
+#     read_at = db.Column(
+#         db.DateTime,
+#     )
 
-    from_user = db.Column(
-        db.String,
-        db.ForeignKey('users.username', ondelete='CASCADE'),
-        nullable=False,
-    )
+#     to_user = db.Column(
+#         db.String,
+#         db.ForeignKey('users.username', ondelete='CASCADE'),
+#         nullable=False,
+#     )
 
-    def __repr__(self):
-        return f"""<Message #{self.id}:
-                    {self.to_user},
-                    {self.from_user},
-                    {self.sent_at}>"""
+#     from_user = db.Column(
+#         db.String,
+#         db.ForeignKey('users.username', ondelete='CASCADE'),
+#         nullable=False,
+#     )
 
-    user = db.relationship('User')
+#     def __repr__(self):
+#         return f"""<Message #{self.id}:
+#                     {self.to_user},
+#                     {self.from_user},
+#                     {self.sent_at}>"""
+
+#     user = db.relationship('User')
 
 
 class Listing(db.Model):
@@ -255,7 +255,7 @@ class Listing(db.Model):
                     {self.latitude},
                     {self.longitude}>"""
 
-    user = db.relationship('User')
+    # user = db.relationship('User', backref="listing")
 
     @classmethod
     def find_all(inputs):
@@ -280,14 +280,14 @@ class Listing(db.Model):
     @classmethod
     def create(cls,
                title,
-               description=None,
-               photo=None,
                price,
                longitude,
                latitude,
                beds,
                rooms,
-               bathrooms
+               bathrooms,
+               description=None,
+               photo=None,
                ):
         """Create listing and adds listing to system."""
 
@@ -305,7 +305,7 @@ class Listing(db.Model):
 
         db.session.add(listing)
         return listing
-    }
+
 
 
 def connect_db(app):
