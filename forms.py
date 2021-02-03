@@ -21,6 +21,16 @@ class UserLoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[Length(min=6)])
 
+class UserEditForm(FlaskForm):
+    """ Edit user form """
+
+    first_name = StringField('First name')
+    last_name = StringField('Last name')
+    email = StringField('E-mail', validators=[Email()])
+    password = PasswordField('Password', validators=[Length(min=6)])
+    image_url = StringField('(Optional) Image URL')
+    location = StringField('Location')
+    bio = StringField("Bio")
 
 class MessageForm(FlaskForm):
     """Message form."""

@@ -10,7 +10,7 @@ from flask_jwt_extended import (
 )
 
 from forms import (
-    UserSignUpForm, UserLoginForm, ListingForm, ListingSearchForm
+    UserSignUpForm, UserLoginForm, ListingForm, ListingSearchForm, UserEditForm
 )
 from models import db, connect_db, User, Listing
 
@@ -161,7 +161,7 @@ def login():
 
 @app.route('/users/<username>')
 def user_show(username):
-    """Show user profile."""
+    """Show user details."""
 
     user = User.query.get_or_404(username)
     # snagging messages in order from the database;
@@ -183,6 +183,29 @@ def user_show(username):
     }
     return (jsonify(user=user_obj), 200)
 
+@app.route('/users/<username>/edit', methods=["PATCH"])
+def user_edit(username):
+    """ Edit user profile """
+
+    user = User.query.get_or_404(username)
+    user_data = request.json.get("user")
+    form = UserEditForm(data=user_data)
+
+    if form.validate():
+        if User.authenticate(username, form.password.data):
+            user.update(form)
+            db.session.commit()
+            return(jsonify(user=user.serialize()), 200)
+        else:
+            return(jsonify(errors=["Invalid credentials"]), 401)
+    else:
+        errors = []
+        for field in form:
+            for error in field.errors:
+                errors.append(error)
+        return(jsonify(errors=errors), 400)
+
+
 
 # NOTE: No edit or delete user routes at the moment, will add if needed
 
@@ -190,11 +213,13 @@ def user_show(username):
 # TODO: Add Message routes after auth and listing routes work
 # Messages routes:
 
-# @app.route('/messages/<:from_username>/<:to_username>', methods=["GET"])
 # def messages_list():
+# @app.route('/messages/<from_username>/<to_username>', methods=["GET"])
+
 
 # @app.route('/messages/new', methods=["GET", "POST"])
 # def message_add():
+
 
 
 ##############################################################################

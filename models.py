@@ -1,6 +1,6 @@
 """SQLAlchemy models for sharebnb."""
 
-# from datetime import datetime
+from datetime import datetime
 
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
@@ -67,13 +67,19 @@ class User(db.Model):
         default=False
     )
 
-    # messages = db.relationship('Message', order_by='Message.timestamp.desc()')
+    created_listings = db.relationship('Listing',
+                                       foreign_keys='Listing.created_by',
+                                       backref="creator")
+    rented_listings = db.relationship('Listing',
+                                      foreign_keys='Listing.rented_by',
+                                      backref="renter")
 
-    created_listings = db.relationship('Listing', foreign_keys='Listing.created_by', backref="creator")
-    rented_listings = db.relationship('Listing', foreign_keys='Listing.rented_by', backref="renter")
-
-    # TODO: Add toMessages and fromMessages relationship of User to another username
-
+    sent_messages = db.relationship('Message',
+                                    foreign_keys='Message.from_user',
+                                    backref="sender")
+    received_messages = db.relationship('Message',
+                                        foreign_keys='Message.to_user',
+                                        backref="recipient")
 
     def __repr__(self):
         return f"""<User #{self.username}:
@@ -151,52 +157,61 @@ class User(db.Model):
             "location": self.location,
             "is_admin": self.is_admin
         }
+    
+    def update(self, form):
+        """ Update fields of self if key in form """
+
+        self.first_name = form.first_name.data 
+        self.last_name = form.last_name.data 
+        self.email = form.email.data 
+        self.image_url = form.image_url.data 
+        self.location = form.location.data
+        self.bio = form.bio.data
 
 
-# class Message(db.Model):
-#     """An individual message."""
 
-#     __tablename__ = 'messages'
+class Message(db.Model):
+    """An individual message."""
 
-#     id = db.Column(
-#         db.Integer,
-#         primary_key=True,
-#     )
+    __tablename__ = 'messages'
 
-#     body = db.Column(
-#         db.Text,
-#         nullable=False,
-#     )
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+    )
 
-#     sent_at = db.Column(
-#         db.DateTime,
-#         nullable=False,
-#         default=datetime.utcnow(),
-#     )
+    body = db.Column(
+        db.Text,
+        nullable=False,
+    )
 
-#     read_at = db.Column(
-#         db.DateTime,
-#     )
+    sent_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow(),
+    )
 
-#     to_user = db.Column(
-#         db.String,
-#         db.ForeignKey('users.username', ondelete='CASCADE'),
-#         nullable=False,
-#     )
+    read_at = db.Column(
+        db.DateTime,
+    )
 
-#     from_user = db.Column(
-#         db.String,
-#         db.ForeignKey('users.username', ondelete='CASCADE'),
-#         nullable=False,
-#     )
+    to_user = db.Column(
+        db.String,
+        db.ForeignKey('users.username', ondelete='CASCADE'),
+        nullable=False,
+    )
 
-#     def __repr__(self):
-#         return f"""<Message #{self.id}:
-#                     {self.to_user},
-#                     {self.from_user},
-#                     {self.sent_at}>"""
+    from_user = db.Column(
+        db.String,
+        db.ForeignKey('users.username', ondelete='CASCADE'),
+        nullable=False,
+    )
 
-#     user = db.relationship('User')
+    def __repr__(self):
+        return f"""<Message #{self.id}:
+                    {self.to_user},
+                    {self.from_user},
+                    {self.sent_at}>"""
 
 
 class Listing(db.Model):
