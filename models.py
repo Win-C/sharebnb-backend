@@ -133,7 +133,6 @@ class User(db.Model):
         return cls.query.filter_by(username=username).first()
     
 
-
 class Message(db.Model):
     """An individual message."""
 
@@ -257,6 +256,56 @@ class Listing(db.Model):
                     {self.longitude}>"""
 
     user = db.relationship('User')
+
+    @classmethod
+    def find_all(inputs):
+        """ Given search inputs, query for all listings.  """
+
+        base_query = Listing.query
+
+        for key in inputs:
+            if key == 'max_price':
+                base_query = base_query.filter(Listing.price < inputs[key])
+            if key == 'longitude':
+                base_query = base_query.filter(Listing.longitude == inputs[key])
+            if key == 'latitude':
+                base_query = base_query.filter(Listing.latitude == inputs[key])
+            if key == 'beds':
+                base_query = base_query.filter(Listing.beds <= inputs[key])
+            if key == 'bathrooms':
+                base_query = base_query.filter(Listing.bathrooms <= inputs[key])
+
+        return base_query
+
+    @classmethod
+    def create(cls,
+               title,
+               description=None,
+               photo=None,
+               price,
+               longitude,
+               latitude,
+               beds,
+               rooms,
+               bathrooms
+               ):
+        """Create listing and adds listing to system."""
+
+        listing = Listing(
+            title=title,
+            description=description,
+            photo=photo,
+            price=price,
+            longitude=longitude,
+            latitude=latitude,
+            beds=beds,
+            rooms=rooms,
+            bathrooms=bathrooms
+        )
+
+        db.session.add(listing)
+        return listing
+    }
 
 
 def connect_db(app):

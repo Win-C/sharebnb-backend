@@ -1,14 +1,12 @@
 import os
 
-from flask import Flask, render_template, request, flash, session, g
+from flask import Flask, request, session, g, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 from flask_jwt import JWT, jwt_required, current_identity
-from werkzeug.security import safe_str_cmp
 
 from forms import UserSignUpForm, UserLoginForm, MessageForm, ListingForm, ListingSearchForm
 from models import db, connect_db, User, Message, Listing
-from decimal import *
 
 CURR_USER_KEY = "curr_user"
 
@@ -48,7 +46,7 @@ def add_user_to_g():
     # if CURR_USER_KEY in session:
     #     g.user = User.query.get(session[CURR_USER_KEY])
     if request.header.get("authorization", None):
-        # JWT verify the Bearer token 
+        # JWT verify the Bearer token
         print("set g.user")
     else:
         g.user = None
@@ -64,13 +62,13 @@ def do_login(user):
 @app.route('/signup', methods=["POST"])
 def signup():
     """Handle user signup.
-    TODO: Have working WTForm for validation
-    Create new user and add to DB. Returns a JWT token which can be used to authenticate 
-    further requests,  { status_code: 201, token }
+    Create new user and add to DB. Returns a JWT token which can be used to
+    authenticate further requests,  { status_code: 201, token }
 
-    If form not valid, returns JSON error messages like,  { status_code: 404, errors }
+    If form not valid, returns JSON error messages like,  
+    { status_code: 404, errors }
     """
-  
+
     user_data = request.json.get("user")
     form = UserSignUpForm(data=user_data)
 
@@ -123,7 +121,7 @@ def login():
             for error in field.errors:
                 errors.push(error)
         return(jsonify(errors=errors), 400)
-    
+
 
 ##############################################################################
 # General user routes:
@@ -156,7 +154,7 @@ def user_show(username):
 # NOTE: No edit or delete user routes at the moment, will add if needed
 
 ##############################################################################
-TODO: Add Message routes after auth and listing routes work
+# TODO: Add Message routes after auth and listing routes work
 # Messages routes:
 
 # @app.route('/messages/<:from_username>/<:to_username>', methods=["GET"])
@@ -185,21 +183,21 @@ def listings_list():
 
         if max_price:
             output["max_price"] = int(max_price)
-        
+
         if longitude:
             output["longitude"] = float(longitude)
-        
+
         if latitude:
             output["latitude"] = float(latitude)
-        
+
         if beds:
             output["beds"] = int(beds.split(".")[0])
 
         if bathrooms:
             output["bathrooms"] = int(bathrooms.split(".")[0])
-        
+
         return output
-        
+
     inputs = convert_inputs(request.args)
     form = ListingSearchForm(data=inputs)
     if form.validate():
@@ -213,53 +211,51 @@ def listing_show(listing_id):
     """ Show a listing
 
     Auth required: none
-    """ 
+    """
 
     listing = Listing.query.get(listing_id)
-    if not listing: 
+    if not listing:
         return (jsonify(errors=["Listing does not exist"]), 404)
     else:
         return (jsonify(listing=listing), 200)
 
 @app.route('/listings', methods=["POST"])
 def listing_create():
-    """ 
-    Create a new listing. 
+    """
+    Create a new listing.
 
     Auth required: admin or logged in user
-    TODO: Create a listing in model, then commit to db or handle errors otherwise with json messages
     """
     listing_data = request.json.get("listing")
     form = ListingForm(data=listing_data)
 
-    # if form.validate():
-    #     try:
-    #         user = Listing.signup(
-    #             username=form.username.data,
-    #             password=form.password.data,
-    #             first_name=form.first_name.data,
-    #             last_name=form.last_name.data,
-    #             email=form.email.data,
-    #             image_url=form.image_url.data or User.image_url.default.arg,
-    #         )
-    #         db.session.commit()
+    if form.validate():
+        listing = Listing.create(
+            title=form.title.data,
+            description=form.description.data,
+            photo=form.photo.data or Listing.photo.default.arg,
+            price=form.price.data,
+            longitude=form.longitude.data,
+            latitude=form.latitude.data,
+            beds=form.beds.data,
+            rooms=form.rooms.data,
+            bathrooms=form.bathrooms.data,
+        )
+        db.session.commit()
+        # TODO: reevaluate error with a try and except later
+        return (jsonify(listing=listing), 201)
+    else:
+        errors = []
+        for field in form:
+            for error in field.errors:
+                errors.push(error)
+        return(jsonify(errors=errors), 400)
 
-    #     except IntegrityError as e:
-    #         errors = ["Username already taken"]
-    #         return (jsonify(errors=errors), 400)
+# TODO: 
+# @app.route('/listings/:id', methods=["PATCH"])
+# def listing_edit():
 
-    #     return do_login(user)
-    # else:
-    #     errors = []
-    #     for field in form:
-    #         for error in field.errors:
-    #             errors.push(error)
-    #     return(jsonify(errors=errors), 400)
-
-@app.route('/listings/:id', methods=["PATCH"])
-def listing_edit():
-
-@app.route('/listings/delete', methods=["POST"])
+# @app.route('/listings/delete', methods=["POST"])
 
 
 ##############################################################################
