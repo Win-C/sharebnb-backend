@@ -131,6 +131,20 @@ class User(db.Model):
 
         username = payload['username']
         return cls.query.filter_by(username=username).first()
+    
+    def serialize(self):
+        """ Serialize User object to dictionary """
+
+        return {
+            "username": self.username,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "image_url": self.image_url,
+            "email": self.email,
+            "bio": self.bio,
+            "location": self.location,
+            "is_admin": self.is_admin
+        }
 
 
 # class Message(db.Model):
@@ -240,7 +254,7 @@ class Listing(db.Model):
     created_by = db.Column(
         db.String,
         db.ForeignKey('users.username', ondelete='CASCADE'),
-        nullable=False,
+        nullable=False
     )
 
     rented_by = db.Column(
@@ -258,10 +272,10 @@ class Listing(db.Model):
     # user = db.relationship('User', backref="listing")
 
     @classmethod
-    def find_all(inputs):
+    def find_all(cls, inputs):
         """ Given search inputs, query for all listings.  """
 
-        base_query = Listing.query
+        base_query = cls.query
 
         for key in inputs:
             if key == 'max_price':
@@ -305,6 +319,35 @@ class Listing(db.Model):
 
         db.session.add(listing)
         return listing
+    
+    def serialize(self, isDetailed):
+        """ Serialize Listing object to dictionary 
+        price is a Numeric in db, but Decimal is not serializable, 
+        so converting to a float beforehand
+        """
+        if not isDetailed:
+            return {
+                "title": self.title,
+                "description": self.description,
+                "photo": self.photo,
+                "price": float(self.price),
+                "latitude": self.latitude,
+                "longitude": self.longitude,
+            }
+
+        return {
+            "title": self.title,
+            "description": self.description,
+            "photo": self.photo,
+            "price": float(self.price),
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "beds": self.beds,
+            "rooms": self.rooms,
+            "bathrooms": self.bathrooms,
+            "created_by": self.created_by,
+            "rented_by": self.rented_by
+        }
 
 
 

@@ -201,8 +201,10 @@ def listings_list():
     inputs = convert_inputs(request.args)
     form = ListingSearchForm(data=inputs)
     if form.validate():
-        listings = Listing.find_all(inputs)
-        return (jsonify(listings=listings), 200)
+        listings = Listing.find_all(inputs).all()
+        print("Listings: ", listings, "type :", type(listings))
+        serialized = [listing.serialize(isDetailed=True) for listing in listings]
+        return (jsonify(listings=serialized), 200)
     else:
         return (jsonify(errors=["Bad request"]), 400)
 
