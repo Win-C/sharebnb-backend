@@ -53,6 +53,7 @@ class User(db.Model):
 
     location = db.Column(
         db.Text,
+        nullable=False
     )
 
     password = db.Column(
@@ -68,8 +69,8 @@ class User(db.Model):
 
     # messages = db.relationship('Message', order_by='Message.timestamp.desc()')
 
-    created_listings = db.relationship('Listing', foreign_keys='Listing.created_by')
-    rented_listings = db.relationship('Listing', foreign_keys='Listing.rented_by')
+    created_listings = db.relationship('Listing', foreign_keys='Listing.created_by', backref="creator")
+    rented_listings = db.relationship('Listing', foreign_keys='Listing.rented_by', backref="renter")
 
     # TODO: Add toMessages and fromMessages relationship of User to another username
 
@@ -88,6 +89,7 @@ class User(db.Model):
                email,
                password,
                image_url=DEFAULT_USER_IMAGE,
+               location=""
                ):
         """Sign up user.
 
@@ -103,6 +105,7 @@ class User(db.Model):
             email=email,
             password=hashed_pwd,
             image_url=image_url,
+            location=location
         )
 
         db.session.add(user)
@@ -272,8 +275,6 @@ class Listing(db.Model):
                     {self.latitude},
                     {self.longitude}>"""
 
-    user = db.relationship('User')
-
     @classmethod
     def find_all(cls, inputs):
         """ Given search inputs, query for all listings.  """
@@ -297,6 +298,7 @@ class Listing(db.Model):
     @classmethod
     def create(cls,
                title,
+               created_by,
                price,
                longitude,
                latitude,
@@ -304,13 +306,14 @@ class Listing(db.Model):
                rooms,
                bathrooms,
                description=None,
-               photo=None,
+               photo=None
                ):
         """Create listing and adds listing to system."""
 
         listing = Listing(
             title=title,
             description=description,
+            created_by=created_by,
             photo=photo,
             price=price,
             longitude=longitude,
@@ -328,8 +331,10 @@ class Listing(db.Model):
         price is a Numeric in db, but Decimal is not serializable, 
         so converting to a float beforehand
         """
+
         if not isDetailed:
             return {
+                "id": self.id,
                 "title": self.title,
                 "description": self.description,
                 "photo": self.photo,
@@ -339,6 +344,7 @@ class Listing(db.Model):
             }
 
         return {
+            "id": self.id,
             "title": self.title,
             "description": self.description,
             "photo": self.photo,

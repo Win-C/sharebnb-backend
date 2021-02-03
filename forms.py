@@ -12,6 +12,7 @@ class UserSignUpForm(FlaskForm):
     email = StringField('E-mail', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[Length(min=6)])
     image_url = StringField('(Optional) Image URL')
+    location = StringField('Location')
 
 
 class UserLoginForm(FlaskForm):
@@ -41,6 +42,7 @@ class ListingForm(FlaskForm):
     beds = IntegerField('beds', validators=[DataRequired()])
     rooms = IntegerField('rooms', validators=[DataRequired()])
     bathrooms = IntegerField('bathrooms', validators=[DataRequired()])
+    created_by = StringField('Created by', validators=[DataRequired()])
 
 
 class ListingSearchForm(FlaskForm):

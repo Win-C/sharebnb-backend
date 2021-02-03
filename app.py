@@ -53,9 +53,12 @@ def protected():
 
 
 def do_login(user):
-    """Log in user by returning token for future auth checking."""
+    """Log in user by returning token for future auth checking.
+    TODO: JWT currently not working, will revisit after
+    """
 
-    jwt = JWT(app, User.authenticate, User.identity)
+    # jwt = JWT(app, User.authenticate, User.identity)
+    jwt = "okay"
     return (jsonify(token=jwt), 200)
 
 
@@ -80,24 +83,24 @@ def signup():
                 first_name=form.first_name.data,
                 last_name=form.last_name.data,
                 email=form.email.data,
+                location=form.location.data,
                 image_url=form.image_url.data or User.image_url.default.arg,
             )
             db.session.commit()
-
-        except IntegrityError:
+            return do_login(user)
+        except IntegrityError as e:
+            print(e)
             errors = ["Username already taken"]
             return (jsonify(errors=errors), 400)
-
-        return do_login(user)
     else:
         errors = []
         for field in form:
             for error in field.errors:
-                errors.push(error)
+                errors.append(error)
         return(jsonify(errors=errors), 400)
 
 
-@app.route('/login', methods=["GET", "POST"])
+@app.route('/login', methods=["POST"])
 def login():
     """Handle user login.
     Validates user credentials with form. Returns JWT token if authenticated,
@@ -119,7 +122,7 @@ def login():
         errors = []
         for field in form:
             for error in field.errors:
-                errors.push(error)
+                errors.append(error)
         return(jsonify(errors=errors), 400)
 
 
@@ -130,7 +133,7 @@ def login():
 def user_show(username):
     """Show user profile."""
 
-    user = User.query.get(username)
+    user = User.query.get_or_404(username)
     # snagging messages in order from the database;
     # user.messages won't be in order by default
     # messages = (Message
@@ -203,7 +206,7 @@ def listings_list():
     if form.validate():
         listings = Listing.find_all(inputs).all()
         print("Listings: ", listings, "type :", type(listings))
-        serialized = [listing.serialize(isDetailed=True) for listing in listings]
+        serialized = [listing.serialize(isDetailed=False) for listing in listings]
         return (jsonify(listings=serialized), 200)
     else:
         return (jsonify(errors=["Bad request"]), 400)
@@ -215,11 +218,11 @@ def listing_show(listing_id):
     Auth required: none
     """
 
-    listing = Listing.query.get(listing_id)
+    listing = Listing.query.get_or_404(listing_id)
     if not listing:
         return (jsonify(errors=["Listing does not exist"]), 404)
     else:
-        return (jsonify(listing=listing), 200)
+        return (jsonify(listing=listing.serialize(isDetailed=True)), 200)
 
 @app.route('/listings', methods=["POST"])
 def listing_create():
@@ -242,15 +245,16 @@ def listing_create():
             beds=form.beds.data,
             rooms=form.rooms.data,
             bathrooms=form.bathrooms.data,
+            created_by=form.created_by.data
         )
         db.session.commit()
         # TODO: reevaluate error with a try and except later
-        return (jsonify(listing=listing), 201)
+        return (jsonify(listing=listing.serialize(isDetailed=True)), 201)
     else:
         errors = []
         for field in form:
             for error in field.errors:
-                errors.push(error)
+                errors.append(error)
         return(jsonify(errors=errors), 400)
 
 # TODO: 
