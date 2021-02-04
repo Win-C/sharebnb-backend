@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, request, jsonify, url_for
+from flask import Flask, request, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 from flask_jwt_extended import (
@@ -12,9 +12,8 @@ from upload_functions import (
     allowed_file, upload_file, create_presigned_url
 )
 
-
 from forms import (
-    UserSignUpForm, UserLoginForm, ListingForm, ListingSearchForm, 
+    UserSignUpForm, UserLoginForm, ListingForm, ListingSearchForm,
     UserEditForm, UploadForm
 )
 from models import db, connect_db, User, Listing
@@ -39,7 +38,8 @@ jwt = JWTManager(app)
 
 app.config['WTF_CSRF_ENABLED'] = False
 
-BUCKET = "sharebnb-aw-dev"
+# BUCKET = "sharebnb-aw-dev"
+BUCKET = "sharebnb-wchou"
 
 toolbar = DebugToolbarExtension(app)
 
@@ -51,7 +51,7 @@ connect_db(app)
 @app.route("/uploaded", methods=['POST'])
 def uploaded():
     """ Testing upload files to S3 """
-    
+
     # image_data = request.json.get("image_url")
 
     file = request.files['image_url']
@@ -130,7 +130,7 @@ def signup():
     Create new user and add to DB. Returns a JWT token which can be used to
     authenticate further requests,  { status_code: 201, token }
 
-    If form not valid, returns JSON error messages like,  
+    If form not valid, returns JSON error messages like,
     { status_code: 404, errors }
     """
 
@@ -142,9 +142,6 @@ def signup():
         try:
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                # file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            # TODO: save to S3 to bucket and get URL
-            # then assign URL to image_url field in database
             user = User.signup(form)
             # user.image_url = filename
             db.session.commit()
@@ -203,10 +200,6 @@ def user_show(username):
     #             .order_by(Message.timestamp.desc())
     #             .limit(100)
     #             .all())
-
-    # TODO: serve up user image
-    # connect to S3 bucket to serve up the image
-    # use url_for with S3 path
 
     return (jsonify(user=user.serialize()), 200)
 

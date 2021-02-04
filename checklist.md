@@ -14,6 +14,6 @@ TODO List:
     - build out messages endpoints
     - build out upload files app / capabilities
     - set up os.environ
-- Database storage / S3
-    - Create bucket sharebnb
-- 
+- ~~Database storage / S3~~
+    - ~~Create bucket sharebnb~~
+- Basic front-end
