@@ -17,3 +17,8 @@ TODO List:
 - ~~Database storage / S3~~
     - ~~Create bucket sharebnb~~
 - Basic front-end
+    - Get form upload PoC signup working
+    - Landing page
+    - Index page for list of Listings
+    - Login / Signup Forms
+    
