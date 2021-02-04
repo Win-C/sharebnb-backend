@@ -14,7 +14,7 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def upload_file(file_name, bucket, object_name=None):
+def upload_file_obj(file_obj, bucket, object_name):
     """Upload a file to an S3 bucket
 
     :param file_name: File to upload
@@ -25,13 +25,11 @@ def upload_file(file_name, bucket, object_name=None):
 
     # If S3 object_name was not specified, use file_name
     # TODO: Name objects using some logic: listing_id+photos_1, etc.
-    if object_name is None:
-        object_name = file_name
 
     # Upload the file
     s3_client = boto3.client('s3')
     try:
-        s3_client.upload_file(file_name, bucket, object_name)
+        s3_client.upload_fileobj(file_obj, bucket, object_name)
     except ClientError as e:
         logging.error(e)
         return False

@@ -9,7 +9,7 @@ from flask_jwt_extended import (
 )
 from werkzeug.utils import secure_filename
 from upload_functions import (
-    allowed_file, upload_file, create_presigned_url
+    allowed_file, upload_file_obj, create_presigned_url
 )
 
 from forms import (
@@ -24,11 +24,13 @@ from forms import (
 )
 from models import db, connect_db, User, Listing, Message
 
+
 # CURR_USER_KEY = "curr_user"
 app = Flask(__name__)
 
-# TODO: Maybe delete upload folder
-# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+UPLOAD_FOLDER = os.path.join(app.root_path, "upload")
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000
 # Get DB_URI from environ variable (useful for production/testing) or,
 # if not set there, use development local db.
@@ -44,8 +46,8 @@ jwt = JWTManager(app)
 
 app.config['WTF_CSRF_ENABLED'] = False
 
-# BUCKET = "sharebnb-aw-dev"
-BUCKET = "sharebnb-wchou"
+BUCKET = "sharebnb-aw-dev"
+# BUCKET = "sharebnb-wchou"
 
 toolbar = DebugToolbarExtension(app)
 
@@ -58,16 +60,12 @@ connect_db(app)
 def uploaded():
     """ Testing upload files to S3 """
 
-    # image_data = request.json.get("image_url")
-
+    # upload object, don't need to save to disk
     file = request.files['image_url']
-    print("image_url= ", file)
     try:
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            print("filename= ", filename)
-            response = upload_file(filename, BUCKET)
-            print("upload response = ", response)
+            upload_file_obj(file, BUCKET, filename)
 
             url = create_presigned_url(BUCKET, filename)
             return(jsonify(message="File uploaded", url=url), 201)
@@ -147,7 +145,7 @@ def signup():
 
     user_data = request.json.get("user")
     # NOTE: UNCOMMENT FOR FILE UPLOAD
-    file = request.files['file']
+    file = request.files['image_url']
     form = UserSignUpForm(data=user_data)
 
     if form.validate():
