@@ -10,11 +10,9 @@ from wtforms import (
     FileField,
 )
 
-# TODO: reevalaute form validation
-
 
 class UserSignUpForm(FlaskForm):
-    """Form for signing up users."""
+    """ Sign up form. """
 
     username = StringField('Username', validators=[DataRequired()])
     first_name = StringField('First name', validators=[DataRequired()])
@@ -26,14 +24,14 @@ class UserSignUpForm(FlaskForm):
 
 
 class UserLoginForm(FlaskForm):
-    """Login form."""
+    """ Login form. """
 
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[Length(min=6)])
 
 
 class UserEditForm(FlaskForm):
-    """ Edit user form """
+    """ Edit user form. """
 
     bio = StringField("Bio")
     first_name = StringField('First name')
@@ -44,16 +42,16 @@ class UserEditForm(FlaskForm):
     location = StringField('Location')
 
 
-class MessageForm(FlaskForm):
-    """Message form."""
+class MessageCreateForm(FlaskForm):
+    """ Message create form. """
 
     body = TextAreaField('Body', validators=[DataRequired()])
     to_user = StringField('to_user', validators=[DataRequired()])
     from_user = StringField('from_user', validators=[DataRequired()])
 
 
-class ListingForm(FlaskForm):
-    """Listing form."""
+class ListingCreateForm(FlaskForm):
+    """ Listing create form. """
 
     title = TextAreaField('title', validators=[DataRequired()])
     description = TextAreaField('description')
@@ -67,8 +65,24 @@ class ListingForm(FlaskForm):
     created_by = StringField('Created by', validators=[DataRequired()])
 
 
+class ListingEditForm(FlaskForm):
+    """ Listing edit form. """
+
+    title = TextAreaField('title')
+    description = TextAreaField('description')
+    photo = FileField('photo')
+    price = DecimalField('price', places=2)
+    longitude = FloatField('longitude')
+    latitude = FloatField('latitude')
+    beds = IntegerField('beds')
+    rooms = IntegerField('rooms')
+    bathrooms = IntegerField('bathrooms')
+    created_by = StringField('Created by')
+    rented_by = StringField('Rented by')
+
+
 class ListingSearchForm(FlaskForm):
-    """ Listing query args validator form """
+    """ Listing search params query args validator form. """
 
     max_price = IntegerField('max_price')
     longitude = FloatField('longitude')
@@ -76,5 +90,7 @@ class ListingSearchForm(FlaskForm):
     beds = IntegerField('beds')
     bathrooms = IntegerField('bathrooms')
 
+
 class UploadForm(FlaskForm):
+    """ User's image file upload form.  """
     image_url = FileField('(Optional) Image URL')

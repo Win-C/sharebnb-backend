@@ -94,7 +94,9 @@ class User(db.Model):
         Hashes password and adds user to system.
         """
 
-        hashed_pwd = bcrypt.generate_password_hash(form.password.data).decode('UTF-8')
+        hashed_pwd = bcrypt.generate_password_hash(
+                            form.password.data
+                            ).decode('UTF-8')
 
         user = User(
             username=form.username.data,
@@ -169,16 +171,6 @@ class Message(db.Model):
         nullable=False,
     )
 
-    sent_at = db.Column(
-        db.DateTime,
-        nullable=False,
-        default=datetime.utcnow(),
-    )
-
-    read_at = db.Column(
-        db.DateTime,
-    )
-
     to_user = db.Column(
         db.String,
         db.ForeignKey('users.username', ondelete='CASCADE'),
@@ -191,11 +183,63 @@ class Message(db.Model):
         nullable=False,
     )
 
+    sent_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow(),
+    )
+
+    read_at = db.Column(
+        db.DateTime,
+    )
+
     def __repr__(self):
         return f"""<Message #{self.id}:
                     {self.to_user},
                     {self.from_user},
                     {self.sent_at}>"""
+
+    @classmethod
+    def find_all(cls, from_user, to_user):
+        """ Given from_user and to_user, query for all messages.
+            Order by timestamp descending
+            Limit by 100
+        """
+
+        messages = cls.query.filter(
+                                    Message.from_user == from_user,
+                                    Message.to_user == to_user,
+                            ).order_by(
+                                Message.sent_at.desc()
+                            ).limit(
+                                100
+                            ).all()
+        return messages
+
+    @classmethod
+    def create(cls, form):
+        """Create message and add message to database."""
+
+        message = Message(
+            body=form.body.data,
+            from_user=form.from_user.data,
+            to_user=form.to_user.data,
+            sent_at=datetime.now(),  # NOTE: confirm timestamp here
+        )
+
+        db.session.add(message)
+        return message
+
+    def serialize(self):
+        """ Serialize message object to dictionary. """
+
+        return {
+            "body": self.body,
+            "from_user": self.from_user,
+            "to_user": self.to_user,
+            "sent_at": self.sent_at,
+            "read_at": self.read_at,
+        }
 
 
 class Listing(db.Model):
@@ -275,28 +319,39 @@ class Listing(db.Model):
                     {self.longitude}>"""
 
     @classmethod
-    def find_all(cls, inputs):
-        """ Given search inputs, query for all listings.  """
+    def find_all(cls, search_params):
+        """ Given search inputs, query and return all listings.  """
 
-        base_query = cls.query
+        search_query = cls.query
 
-        for key in inputs:
+        for key in search_params:
             if key == 'max_price':
-                base_query = base_query.filter(Listing.price < inputs[key])
+                search_query = search_query.filter(
+                    Listing.price < search_params[key]
+                    )
             if key == 'longitude':
-                base_query = base_query.filter(Listing.longitude == inputs[key])
+                search_query = search_query.filter(
+                    Listing.longitude == search_params[key]
+                    )
             if key == 'latitude':
-                base_query = base_query.filter(Listing.latitude == inputs[key])
+                search_query = search_query.filter(
+                    Listing.latitude == search_params[key]
+                    )
             if key == 'beds':
-                base_query = base_query.filter(Listing.beds == inputs[key])
+                search_query = search_query.filter(
+                    Listing.beds == search_params[key]
+                    )
             if key == 'bathrooms':
-                base_query = base_query.filter(Listing.bathrooms == inputs[key])
+                search_query = search_query.filter(
+                    Listing.bathrooms == search_params[key]
+                    )
 
-        return base_query
+        listings = search_query.all()
+        return listings
 
     @classmethod
     def create(cls, form):
-        """Create listing and adds listing to system."""
+        """Create listing and adds listing to database."""
 
         listing = Listing(
             title=form.title.data,
@@ -313,6 +368,34 @@ class Listing(db.Model):
 
         db.session.add(listing)
         return listing
+
+    @classmethod
+    def convert_inputs(self, inputs):
+        """ Converts search parameter inputs into correct type. """
+
+        search_params = {}
+        max_price = inputs.get("max_price", None)
+        longitude = inputs.get("longitude", None)
+        latitude = inputs.get("latitude", None)
+        beds = inputs.get("beds", None)
+        bathrooms = inputs.get("bathrooms", None)
+
+        if max_price:
+            search_params["max_price"] = int(max_price)
+
+        if longitude:
+            search_params["longitude"] = float(longitude)
+
+        if latitude:
+            search_params["latitude"] = float(latitude)
+
+        if beds:
+            search_params["beds"] = int(beds.split(".")[0])
+
+        if bathrooms:
+            search_params["bathrooms"] = int(bathrooms.split(".")[0])
+
+        return search_params
 
     def serialize(self, isDetailed):
         """ Serialize Listing object to dictionary
@@ -345,6 +428,21 @@ class Listing(db.Model):
             "created_by": self.created_by,
             "rented_by": self.rented_by
         }
+
+    def update(self, form):
+        """ Update fields of self if key in form """
+
+        self.title = form.title.data
+        self.description = form.description.data
+        self.photo = form.photo.data
+        self.price = form.price.data
+        self.longitude = form.longitude.data
+        self.latitude = form.latitude.data
+        self.beds = form.beds.data
+        self.rooms = form.rooms.data
+        self.bathrooms = form.bathrooms.data
+        self.created_by = form.created_by.data
+        self.rented_by = form.rented_by.data
 
 
 def connect_db(app):

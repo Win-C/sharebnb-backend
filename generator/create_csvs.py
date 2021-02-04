@@ -5,19 +5,40 @@ tweak the CSV formats or generate fewer/more rows.
 """
 
 import csv
-from random import choice, randint, sample, uniform
+from random import choice, sample, uniform
 from itertools import permutations
 import requests
 from faker import Faker
+from helpers import get_random_datetime
 
-
-USERS_CSV_HEADERS = ['email', 'username', 'image_url', 'password',
-                     'first_name', 'last_name', 'bio', 'location']
-LISTINGS_CSV_HEADERS = ['title', 'description', 'photo', 'price',
-                        'latitude', 'longitude', 'beds', 'rooms',
-                        'bathrooms', 'created_by']                        
-MESSAGES_CSV_HEADERS = ['body', 'to_user', 'from_user']
-# FOLLOWS_CSV_HEADERS = ['user_being_followed_id', 'user_following_id']
+USERS_CSV_HEADERS = [
+    'username',
+    'bio',
+    'first_name',
+    'last_name',
+    'email',
+    'password',
+    'image_url',
+    'location'
+    ]
+LISTINGS_CSV_HEADERS = [
+    'title',
+    'description',
+    'photo',
+    'price',
+    'longitude',
+    'latitude',
+    'beds',
+    'rooms',
+    'bathrooms',
+    'created_by'
+    ]
+MESSAGES_CSV_HEADERS = [
+    'body',
+    'sent_at',
+    'to_user',
+    'from_user'
+    ]
 
 NUM_USERS = 100
 NUM_LISTINGS = 50
@@ -52,7 +73,7 @@ all_usernames = []
 with open('generator/users.csv', 'w') as users_csv:
     users_writer = csv.DictWriter(users_csv, fieldnames=USERS_CSV_HEADERS)
     users_writer.writeheader()
-    
+
     for i in range(NUM_USERS):
         new_username = fake.user_name()
         all_usernames.append(new_username)
@@ -63,14 +84,19 @@ with open('generator/users.csv', 'w') as users_csv:
             first_name=fake.first_name(),
             last_name=fake.last_name(),
             image_url=choice(image_urls),
-            password='$2b$12$Q1PUFjhN/AWRQ21LbGYvjeLpZZB6lfZ1BPwifHALGO6oIbyC3CmJe',
+            password=(
+                '$2b$12$Q1PUFjhN/AWRQ21LbGYvjeLpZZB6lfZ1BPwifHALGO6oIbyC3CmJe'
+            ),
             bio=fake.sentence(),
             location=fake.city()
         ))
 
 # generate a range of fake listings
 with open('generator/listings.csv', 'w') as listings_csv:
-    listings_writer = csv.DictWriter(listings_csv, fieldnames=LISTINGS_CSV_HEADERS)
+    listings_writer = csv.DictWriter(
+        listings_csv,
+        fieldnames=LISTINGS_CSV_HEADERS
+        )
     listings_writer.writeheader()
 
     for i in range(NUM_LISTINGS):
@@ -88,20 +114,22 @@ with open('generator/listings.csv', 'w') as listings_csv:
             created_by=choice(all_usernames)
         ))
 
-"""  
-May need to generate messages later with a to and from_user
-Strategy: Get pairs of usernames, then use DictWriter to write in rows where from_username
-and to_username are sourced from the pair 
-""" 
+# generate a range of fake messages
+with open('generator/messages.csv', 'w') as messages_csv:
+    # get pairs of usernames, then use DictWriter to write in rows where
+    # from_username and to_username are sourced from the pair with randomly
+    # generated timestamp for sent_at
+    all_pairs = list(permutations(all_usernames, 2))
+    messages_writer = csv.DictWriter(
+        messages_csv,
+        fieldnames=MESSAGES_CSV_HEADERS,
+        )
+    messages_writer.writeheader()
 
-# with open('generator/messages.csv', 'w') as messages_csv:
-#     all_pairs = list(permutations(all_usernames, 2))
-#     messages_writer = csv.DictWriter(messages_csv, fieldnames=MESSAGES_CSV_HEADERS)
-#     messages_writer.writeheader()
-
-#     for from_username, to_username in sample(all_pairs, NUM_MESSAGES):
-#         messages_writer.writerow(dict(
-#             body=fake.sentence(),
-#             from_user=from_username,
-#             to_user=to_username
-#         ))
+    for from_username, to_username in sample(all_pairs, NUM_MESSAGES):
+        messages_writer.writerow(dict(
+            body=fake.sentence(),
+            sent_at=get_random_datetime(),
+            to_user=to_username,
+            from_user=from_username,
+        ))

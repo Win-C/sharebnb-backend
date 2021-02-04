@@ -7,11 +7,16 @@ TODO List:
     - ~~test endpoints (users, listings)~~
     - ~~incorporate JWTs~~
     - ~~test authorization: login, signup~~
-    - ~~authentications on protected routes~~
+    - authentications on protected routes
+        - ~~ completed basic login requirements ~~
+        - need to do admin and same user tests
     - ~~Edit users~~
-    - Edit listings
-    - Delete users / listings (lower priority)
-    - build out messages endpoints
+    - ~~Edit listings~~
+    - ~~Delete users / listings~~
+    - ~~build out messages endpoints~~
+        - ~~created messages seed file~~
+        - ~~query for messages between two users~~
+    - build out query endpoint for all messages for one user (inbox & outbox) (lower priority)
     - build out upload files app / capabilities
     - set up os.environ
 - ~~Database storage / S3~~

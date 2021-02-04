@@ -1,5 +1,5 @@
-from werkzeug.utils import secure_filename
-from flask import url_for
+# from werkzeug.utils import secure_filename
+# from flask import url_for
 import logging
 import boto3
 from botocore.exceptions import ClientError
@@ -7,10 +7,12 @@ from botocore.exceptions import ClientError
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 # UPLOAD_FOLDER = '/path/to/the/uploads'
 
+
 # Checks that file has allowed extension
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 def upload_file(file_name, bucket, object_name=None):
     """Upload a file to an S3 bucket
@@ -29,11 +31,12 @@ def upload_file(file_name, bucket, object_name=None):
     # Upload the file
     s3_client = boto3.client('s3')
     try:
-        response = s3_client.upload_file(file_name, bucket, object_name)
+        s3_client.upload_file(file_name, bucket, object_name)
     except ClientError as e:
         logging.error(e)
         return False
     return True
+
 
 def create_presigned_url(bucket_name, object_name, expiration=None):
     """Generate a presigned URL to share an S3 object

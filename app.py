@@ -13,10 +13,16 @@ from upload_functions import (
 )
 
 from forms import (
-    UserSignUpForm, UserLoginForm, ListingForm, ListingSearchForm,
-    UserEditForm, UploadForm
+    UserSignUpForm,
+    UploadForm,  # NOTE: do we need an upload form for validation?
+    UserLoginForm,
+    UserEditForm,
+    ListingSearchForm,
+    ListingCreateForm,
+    ListingEditForm,
+    MessageCreateForm,
 )
-from models import db, connect_db, User, Listing
+from models import db, connect_db, User, Listing, Message
 
 # CURR_USER_KEY = "curr_user"
 app = Flask(__name__)
@@ -65,7 +71,6 @@ def uploaded():
 
             url = create_presigned_url(BUCKET, filename)
             return(jsonify(message="File uploaded", url=url), 201)
-        # then assign URL to image_url field in database
     except IntegrityError as e:
         print(e)
         errors = ["Username already taken"]
@@ -94,11 +99,11 @@ def user_identity_lookup(user):
 @app.route('/protected', methods=['GET'])
 @jwt_required
 def protected():
-    ret = {
+    payload = {
         'username': get_jwt_identity(),
         'is_admin': get_jwt_claims()['is_admin']
     }
-    return jsonify(ret), 200
+    return jsonify(payload), 200
 
 ##############################################################################
 # User signup/login/logout
@@ -126,20 +131,28 @@ def do_login(user):
 
 @app.route('/signup', methods=["POST"])
 def signup():
-    """Handle user signup.
-    Create new user and add to DB. Returns a JWT token which can be used to
-    authenticate further requests,  { status_code: 201, token }
-
-    If form not valid, returns JSON error messages like,
-    { status_code: 404, errors }
+    """ Handle user signup. Create new user and add to DB.
+        Takes in { user: {
+                        username,
+                        first_name,
+                        last_name,
+                        email,
+                        password,
+                        image_url (not required),
+                        location (not required),
+                        }}
+        Returns a JWT token; otherwise, returns error messages
+                { token } NOTE: change status code to 201?
     """
 
     user_data = request.json.get("user")
+    # NOTE: UNCOMMENT FOR FILE UPLOAD
     file = request.files['file']
     form = UserSignUpForm(data=user_data)
 
     if form.validate():
         try:
+            # NOTE: UNCOMMENT FOR FILE UPLOAD
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
             user = User.signup(form)
@@ -155,14 +168,15 @@ def signup():
         for field in form:
             for error in field.errors:
                 errors.append(error)
-        return(jsonify(errors=errors), 400)
+        return (jsonify(errors=errors), 400)
 
 
 @app.route('/login', methods=["POST"])
 def login():
-    """Handle user login.
-    Validates user credentials with form. Returns JWT token if authenticated,
-    otherwise, returns error messages
+    """ Handle user login.
+        Takes in { user: { username, password }}
+        Returns JWT token if authenticated; otherwise, returns error messages
+                 { token }
     """
 
     user_data = request.json.get("user")
@@ -181,31 +195,65 @@ def login():
         for field in form:
             for error in field.errors:
                 errors.append(error)
-        return(jsonify(errors=errors), 400)
+        return (jsonify(errors=errors), 400)
 
 
 ##############################################################################
 # General user routes:
 
 @app.route('/users/<username>')
+@jwt_required
 def user_show(username):
-    """Show user details."""
+    """ Show user details.
+        Returns => {
+                    users: {
+                            username,
+                            bio,
+                            first_name,
+                            last_name,
+                            email,
+                            image_url,
+                            location,
+                            is_admin
+                        }
+                    }
+        TODO: Auth required: admin or username equals logged in user
+    """
 
     user = User.query.get_or_404(username)
-    # snagging messages in order from the database;
-    # user.messages won't be in order by default
-    # messages = (Message
-    #             .query
-    #             .filter(Message.user_id == user_id)
-    #             .order_by(Message.timestamp.desc())
-    #             .limit(100)
-    #             .all())
+    # TODO: grab messages for user inbox (to_user = user) and
+    #       user outbox (from_user = user)
+    # order messages by most recent from the database
 
     return (jsonify(user=user.serialize()), 200)
 
 @app.route('/users/<username>/edit', methods=["PATCH"])
+@jwt_required
 def user_edit(username):
-    """ Edit user profile """
+    """ Edit user profile.
+        Takes in { user: {
+                        bio,
+                        first_name,
+                        last_name,
+                        email,
+                        password,
+                        image_url,
+                        location
+                        }}
+        Returns => {
+                users: {
+                        username,
+                        bio,
+                        first_name,
+                        last_name,
+                        email,
+                        image_url,
+                        location,
+                        is_admin
+                    }
+                }
+        TODO: Auth required: admin or username equals logged in user
+    """
 
     user = User.query.get_or_404(username)
     user_data = request.json.get("user")
@@ -215,28 +263,88 @@ def user_edit(username):
         if User.authenticate(username, form.password.data):
             user.update(form)
             db.session.commit()
-            return(jsonify(user=user.serialize()), 200)
+            return (jsonify(user=user.serialize()), 200)
         else:
-            return(jsonify(errors=["Invalid credentials"]), 401)
+            return (jsonify(errors=["Invalid credentials"]), 401)
     else:
         errors = []
         for field in form:
             for error in field.errors:
                 errors.append(error)
-        return(jsonify(errors=errors), 400)
+        return (jsonify(errors=errors), 400)
 
-# No delete user routes at the moment, need to add
+
+@app.route('/users/<username>/delete', methods=["DELETE"])
+@jwt_required
+def user_delete(username):
+    """ Delete user.
+        Returns { deleted: success }
+        TODO: Auth required: admin or username equals logged in user
+    """
+    user = User.query.get_or_404(username)
+    db.session.delete(user)
+    db.session.commit()
+    return (jsonify(delete="success"), 201)
+
 
 ##############################################################################
-# TODO: Add Message routes after auth and listing routes work
 # Messages routes:
 
-# def messages_list():
-# @app.route('/messages/<from_username>/<to_username>', methods=["GET"])
+@app.route('/messages/<from_username>/<to_username>', methods=["GET"])
+@jwt_required
+def messages_list(from_username, to_username):
+    """ Show messages between two users.
+        Returns => {
+                    messages: [{
+                            body,
+                            from_user,
+                            to_user,
+                            sent_at,
+                            read_at,
+                        },
+                        ...]
+                    }
+        TODO: Auth required: to_user or from_user equals logged in user
+    """
+    User.query.get_or_404(from_username)
+    User.query.get_or_404(to_username)
 
+    messages = Message.find_all(from_username, to_username)
+    serialized = [message.serialize() for message in messages]
+    return (jsonify(messages=serialized), 200)
 
-# @app.route('/messages/new', methods=["GET", "POST"])
-# def message_add():
+@app.route('/messages/<from_username>/<to_username>/add', methods=["POST"])
+@jwt_required
+def message_add(from_username, to_username):
+    """ Create a message.
+        Takes in { message: { body, from_user, to_user }}
+        Returns => {
+                    message: {
+                            body,
+                            from_user,
+                            to_user,
+                            sent_at,
+                            read_at,
+                        }
+                    }
+        TODO: Auth required: to_user or from_user equals logged in user
+    """
+    # from_username = User.query.get_or_404(from_username)
+    # to_username = User.query.get_or_404(to_username)
+    message_data = request.json.get("message")
+    form = MessageCreateForm(data=message_data)
+
+    if form.validate():
+        message = Message.create(form)
+        db.session.commit()
+        return (jsonify(message=message.serialize()), 200)
+    else:
+        errors = []
+        for field in form:
+            for error in field.errors:
+                errors.append(error)
+        return (jsonify(errors=errors), 400)
+
 
 ##############################################################################
 # General listing routes:
@@ -244,40 +352,31 @@ def user_edit(username):
 @app.route('/listings')
 @jwt_required
 def listings_list():
-    """ Show listings based on query parameters
-    Auth required: none
+    """ Show listings based on query parameters of
+        max price, longitude, latitude, number of beds, or number of bathrooms
+        Returns => {
+                listings: [
+                    {
+                        id,
+                        title,
+                        description,
+                        photo,
+                        price,
+                        longitude,
+                        latitude,
+                    },
+                    ...]
+                }
+        Auth required: user logged in
     """
 
-    def convert_inputs(data):
-        output = {}
-        max_price = data.get("max_price", None)
-        longitude = data.get("longitude", None)
-        latitude = data.get("latitude", None)
-        beds = data.get("beds", None)
-        bathrooms = data.get("bathrooms", None)
-
-        if max_price:
-            output["max_price"] = int(max_price)
-
-        if longitude:
-            output["longitude"] = float(longitude)
-
-        if latitude:
-            output["latitude"] = float(latitude)
-
-        if beds:
-            output["beds"] = int(beds.split(".")[0])
-
-        if bathrooms:
-            output["bathrooms"] = int(bathrooms.split(".")[0])
-
-        return output
-
-    inputs = convert_inputs(request.args)
+    inputs = Listing.convert_inputs(request.args)
     form = ListingSearchForm(data=inputs)
     if form.validate():
-        listings = Listing.find_all(inputs).all()
-        serialized = [listing.serialize(isDetailed=False) for listing in listings]
+        listings = Listing.find_all(inputs)
+        serialized = [listing.serialize(
+                        isDetailed=False
+                        ) for listing in listings]
         return (jsonify(listings=serialized), 200)
     else:
         return (jsonify(errors=["Bad request"]), 400)
@@ -286,9 +385,24 @@ def listings_list():
 @app.route('/listings/<int:listing_id>')
 @jwt_required
 def listing_show(listing_id):
-    """ Show a listing
-
-    Auth required: none
+    """ Show a listing.
+        Returns => {
+                    listing: {
+                                id,
+                                title,
+                                description,
+                                photo,
+                                price,
+                                longitude,
+                                latitude,
+                                beds,
+                                rooms,
+                                bathrooms,
+                                created_by,
+                                rented_by,
+                            }
+                    }
+        Auth required: user logged in
     """
 
     listing = Listing.query.get_or_404(listing_id)
@@ -298,13 +412,39 @@ def listing_show(listing_id):
 @app.route('/listings', methods=["POST"])
 @jwt_required
 def listing_create():
-    """
-    Create a new listing.
-
-    Auth required: admin or logged in user
+    """ Create a new listing.
+        Takes in { listing: {
+                            title,
+                            description,
+                            photo,
+                            price,
+                            longitude,
+                            latitude,
+                            beds,
+                            rooms,
+                            bathrooms,
+                            created_by,
+                            }}
+        Returns => {
+                    listing: {
+                                id,
+                                title,
+                                description,
+                                photo,
+                                price,
+                                longitude,
+                                latitude,
+                                beds,
+                                rooms,
+                                bathrooms,
+                                created_by,
+                                rented_by,
+                            }
+                    }
+    TODO: Auth required: admin or logged in user
     """
     listing_data = request.json.get("listing")
-    form = ListingForm(data=listing_data)
+    form = ListingCreateForm(data=listing_data)
 
     if form.validate():
         listing = Listing.create(form)
@@ -316,12 +456,73 @@ def listing_create():
         for field in form:
             for error in field.errors:
                 errors.append(error)
-        return(jsonify(errors=errors), 400)
+        return (jsonify(errors=errors), 400)
 
-# @app.route('/listings/:id', methods=["PATCH"])
-# def listing_edit():
 
-# @app.route('/listings/delete', methods=["POST"])
+@app.route('/listings/<int:listing_id>/edit', methods=["PATCH"])
+@jwt_required
+def listing_edit(listing_id):
+    """ Edit listing.
+        Takes in { listing: {
+                            title,
+                            description,
+                            photo,
+                            price,
+                            longitude,
+                            latitude,
+                            beds,
+                            rooms,
+                            bathrooms,
+                            created_by,
+                            rented_by,
+                            }}
+        Returns => {
+                    listing: {
+                                id,
+                                title,
+                                description,
+                                photo,
+                                price,
+                                longitude,
+                                latitude,
+                                beds,
+                                rooms,
+                                bathrooms,
+                                created_by,
+                                rented_by,
+                            }
+                    }
+        TODO: Auth required: admin or created_by equals logged in user
+    """
+
+    listing = Listing.query.get_or_404(listing_id)
+    listing_data = request.json.get("listing")
+    form = ListingEditForm(data=listing_data)
+
+    if form.validate():
+        listing.update(form)
+        db.session.commit()
+        return (jsonify(listing=listing.serialize(isDetailed=True)), 200)
+
+    else:
+        errors = []
+        for field in form:
+            for error in field.errors:
+                errors.append(error)
+        return (jsonify(errors=errors), 400)
+
+
+@app.route('/listings/<int:listing_id>/delete', methods=["DELETE"])
+@jwt_required
+def listing_delete(listing_id):
+    """ Delete listing.
+        Returns { deleted: success }
+        TODO: Auth required: admin or created_by equals logged in user
+    """
+    listing = Listing.query.get_or_404(listing_id)
+    db.session.delete(listing)
+    db.session.commit()
+    return (jsonify(delete="success"), 201)
 
 
 ##############################################################################
@@ -329,7 +530,7 @@ def listing_create():
 
 @app.after_request
 def add_header(response):
-    """Add non-caching headers on every request."""
+    """ Add non-caching headers on every request. """
 
     # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
     response.cache_control.no_store = True
