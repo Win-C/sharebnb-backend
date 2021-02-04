@@ -75,3 +75,6 @@ class ListingSearchForm(FlaskForm):
     latitude = FloatField('latitude')
     beds = IntegerField('beds')
     bathrooms = IntegerField('bathrooms')
+
+class UploadForm(FlaskForm):
+    image_url = FileField('(Optional) Image URL')

@@ -8,21 +8,22 @@ from flask_jwt_extended import (
     get_jwt_identity, get_jwt_claims
 )
 from werkzeug.utils import secure_filename
+from upload_functions import (
+    allowed_file, upload_file, create_presigned_url
+)
 
-UPLOAD_FOLDER = '/path/to/the/uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 from forms import (
-    UserSignUpForm, UserLoginForm, ListingForm, ListingSearchForm, UserEditForm
+    UserSignUpForm, UserLoginForm, ListingForm, ListingSearchForm, 
+    UserEditForm, UploadForm
 )
 from models import db, connect_db, User, Listing
 
-CURR_USER_KEY = "curr_user"
-
+# CURR_USER_KEY = "curr_user"
 app = Flask(__name__)
 
 # TODO: Maybe delete upload folder
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000
 # Get DB_URI from environ variable (useful for production/testing) or,
 # if not set there, use development local db.
@@ -38,15 +39,37 @@ jwt = JWTManager(app)
 
 app.config['WTF_CSRF_ENABLED'] = False
 
+BUCKET = "sharebnb-aw-dev"
+
 toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
 
 
-# Checks that file has allowed extension
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+#########################################
+# Testing uploads
+@app.route("/uploaded", methods=['POST'])
+def uploaded():
+    """ Testing upload files to S3 """
+    
+    # image_data = request.json.get("image_url")
+
+    file = request.files['image_url']
+    print("image_url= ", file)
+    try:
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            print("filename= ", filename)
+            response = upload_file(filename, BUCKET)
+            print("upload response = ", response)
+
+            url = create_presigned_url(BUCKET, filename)
+            return(jsonify(message="File uploaded", url=url), 201)
+        # then assign URL to image_url field in database
+    except IntegrityError as e:
+        print(e)
+        errors = ["Username already taken"]
+        return (jsonify(errors=errors), 400)
 
 ##############################################################################
 # JWT
@@ -123,6 +146,7 @@ def signup():
             # TODO: save to S3 to bucket and get URL
             # then assign URL to image_url field in database
             user = User.signup(form)
+            # user.image_url = filename
             db.session.commit()
             return do_login(user)
         except IntegrityError as e:
