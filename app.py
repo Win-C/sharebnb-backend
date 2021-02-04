@@ -8,6 +8,8 @@ from flask_jwt_extended import (
     get_jwt_identity, get_jwt_claims
 )
 from werkzeug.utils import secure_filename
+from flask_cors import CORS
+
 from upload_functions import (
     allowed_file, upload_file_obj, create_presigned_url
 )
@@ -27,6 +29,7 @@ from models import db, connect_db, User, Listing, Message
 
 # CURR_USER_KEY = "curr_user"
 app = Flask(__name__)
+CORS(app)
 
 UPLOAD_FOLDER = os.path.join(app.root_path, "upload")
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
