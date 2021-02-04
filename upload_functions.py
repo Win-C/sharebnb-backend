@@ -36,7 +36,7 @@ def upload_file(file_name, bucket, object_name=None):
         return False
     return True
 
-def create_presigned_url(bucket_name, object_name, expiration=3600):
+def create_presigned_url(bucket_name, object_name, expiration=None):
     """Generate a presigned URL to share an S3 object
 
     :param bucket_name: string
