@@ -215,7 +215,7 @@ def login():
 def user_show(username):
     """ Show user details.
         Returns => {
-                    users: {
+                    user: {
                             username,
                             bio,
                             first_name,
@@ -250,7 +250,7 @@ def user_edit(username):
                         location
                         }}
         Returns => {
-                users: {
+                user: {
                         username,
                         bio,
                         first_name,
