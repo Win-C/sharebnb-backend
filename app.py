@@ -25,7 +25,7 @@ from forms import (
     MessageCreateForm,
 )
 from models import db, connect_db, User, Listing, Message
-
+from botocore.exceptions import ClientError
 
 # CURR_USER_KEY = "curr_user"
 app = Flask(__name__)
@@ -59,23 +59,23 @@ connect_db(app)
 
 #########################################
 # Testing uploads
-@app.route("/uploaded", methods=['POST'])
-def uploaded():
-    """ Testing upload files to S3 """
+# @app.route("/uploaded", methods=['POST'])
+# def uploaded():
+#     """ Testing upload files to S3 """
 
-    # upload object, don't need to save to disk
-    file = request.files['image_url']
-    try:
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            upload_file_obj(file, BUCKET, filename)
+#     # upload object, don't need to save to disk
+#     file = request.files['image_url']
+#     try:
+#         if file and allowed_file(file.filename):
+#             filename = secure_filename(file.filename)
+#             upload_file_obj(file, BUCKET, filename)
 
-            url = create_presigned_url(BUCKET, filename)
-            return(jsonify(message="File uploaded", url=url), 201)
-    except IntegrityError as e:
-        print(e)
-        errors = ["Username already taken"]
-        return (jsonify(errors=errors), 400)
+#             url = create_presigned_url(BUCKET, filename)
+#             return(jsonify(message="File uploaded", url=url), 201)
+#     except IntegrityError as e:
+#         print(e)
+#         errors = ["Username already taken"]
+#         return (jsonify(errors=errors), 400)
 
 ##############################################################################
 # JWT
@@ -146,29 +146,37 @@ def signup():
                 { token } NOTE: change status code to 201?
     """
 
-    user_data = request.json.get("user")
-    # NOTE: UNCOMMENT FOR FILE UPLOAD
-    file = request.files['image_url']
-    form = UserSignUpForm(data=user_data)
+    user_data = request.form
+    print("request.form object = ", request.form)
+    file = request.files.get('image_url')
+    print("file = ", file)
+    form = UserSignUpForm(formdata=user_data)
 
     if form.validate():
         try:
-            # NOTE: UNCOMMENT FOR FILE UPLOAD
+            user = User.signup(form)
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-            user = User.signup(form)
-            # user.image_url = filename
+                upload_file_obj(file, BUCKET, filename)
+
+                url = create_presigned_url(BUCKET, filename)
+                user.image_url = url
             db.session.commit()
             return do_login(user)
         except IntegrityError as e:
             print(e)
             errors = ["Username already taken"]
             return (jsonify(errors=errors), 400)
+        except ClientError as e:
+            print(e)
+            errors = ["Failure to upload image"]
+            return (jsonify(errors=errors), 400)
     else:
         errors = []
         for field in form:
             for error in field.errors:
                 errors.append(error)
+        print("errors = ", errors)
         return (jsonify(errors=errors), 400)
 
 

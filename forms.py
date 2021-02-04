@@ -19,7 +19,7 @@ class UserSignUpForm(FlaskForm):
     last_name = StringField('Last name', validators=[DataRequired()])
     email = StringField('E-mail', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[Length(min=6)])
-    image_url = FileField('(Optional) Image URL')
+    # image_url = FileField('(Optional) Image URL')
     location = StringField('Location')
 
 

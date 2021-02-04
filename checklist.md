@@ -17,13 +17,13 @@ TODO List:
         - ~~created messages seed file~~
         - ~~query for messages between two users~~
     - build out query endpoint for all messages for one user (inbox & outbox) (lower priority)
-    - build out upload files app / capabilities
+    - build out upload files app / capabilities for signup
     - set up os.environ
 - ~~Database storage / S3~~
     - ~~Create bucket sharebnb~~
 - Basic front-end
-    - Get form upload PoC signup working
+    - ~~ Get form upload PoC signup working ~~
     - Landing page
     - Index page for list of Listings
-    - Login / Signup Forms
+    - Login / ~~Signup Forms~~
     

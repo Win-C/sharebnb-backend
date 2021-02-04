@@ -104,7 +104,7 @@ class User(db.Model):
             last_name=form.last_name.data,
             email=form.email.data,
             password=hashed_pwd,
-            image_url=form.image_url.data or DEFAULT_USER_IMAGE,
+            image_url=DEFAULT_USER_IMAGE,
             location=form.location.data or "",
         )
 
