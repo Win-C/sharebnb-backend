@@ -183,6 +183,12 @@ class Message(db.Model):
         nullable=False,
     )
 
+    listing_id = db.Column(
+        db.Integer,
+        db.ForeignKey('listings.id', ondelete="CASCADE"),
+        nullable=False,
+    )
+
     sent_at = db.Column(
         db.DateTime,
         nullable=False,
@@ -193,6 +199,10 @@ class Message(db.Model):
         db.DateTime,
     )
 
+    # listing_thread = db.relationship('Listing',
+    #                                  foreign_keys="Listing.id",
+    #                                  backref="sent_messages")
+
     def __repr__(self):
         return f"""<Message #{self.id}:
                     {self.to_user},
@@ -200,7 +210,7 @@ class Message(db.Model):
                     {self.sent_at}>"""
 
     @classmethod
-    def find_all(cls, from_user, to_user):
+    def find_all(cls, from_user, to_user, listing_id):
         """ Given from_user and to_user, query for all messages.
             Order by timestamp descending
             Limit by 100
@@ -217,6 +227,23 @@ class Message(db.Model):
         return messages
 
     @classmethod
+    def find_by_listing(cls, listing_id, from_username):
+        """ Given listing_id and from_username, query for all messages.
+            Order by timestamp descending
+            Limit by 100
+        """
+
+        messages = cls.query.filter(
+                                    Message.listing_id == listing_id,
+                                    Message.from_user == from_username,
+                            ).order_by(
+                                Message.sent_at.desc()
+                            ).limit(
+                                100
+                            ).all()
+        return messages
+
+    @classmethod
     def create(cls, form):
         """Create message and add message to database."""
 
@@ -224,7 +251,8 @@ class Message(db.Model):
             body=form.body.data,
             from_user=form.from_user.data,
             to_user=form.to_user.data,
-            sent_at=datetime.now(),  # NOTE: confirm timestamp here
+            listing_id=form.listing_id.data,
+            sent_at=datetime.now(),
         )
 
         db.session.add(message)
@@ -237,6 +265,7 @@ class Message(db.Model):
             "body": self.body,
             "from_user": self.from_user,
             "to_user": self.to_user,
+            "listing_id": self.listing_id,
             "sent_at": self.sent_at,
             "read_at": self.read_at,
         }
@@ -310,6 +339,10 @@ class Listing(db.Model):
         db.String,
         db.ForeignKey('users.username', ondelete='CASCADE'),
     )
+
+    sent_messages = db.relationship('Message',
+                                    foreign_keys="Message.listing_id",
+                                    backref="listing_thread")
 
     def __repr__(self):
         return f"""<Listing #{self.id}:

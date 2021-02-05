@@ -153,6 +153,7 @@ def signup():
     form = UserSignUpForm(formdata=user_data)
 
     if form.validate():
+        print("validated")
         try:
             user = User.signup(form)
             if file and allowed_file(file.filename):
@@ -426,6 +427,32 @@ def listing_show(listing_id):
 
     listing = Listing.query.get_or_404(listing_id)
     return (jsonify(listing=listing.serialize(isDetailed=True)), 200)
+
+
+@app.route('/listings/<int:listing_id>/messages', methods=["GET"])
+@jwt_required
+def listing_messages(listing_id):
+    """ Show messages belonging to a listing thread
+        Returns => {
+                    messages: [{
+                            body,
+                            from_user,
+                            to_user,
+                            listing_id
+                            sent_at,
+                            read_at,
+                        },
+                        ...]
+                    }
+        TODO: Auth required: to_user or from_user equals logged in user
+    """
+    Listing.query.get_or_404(listing_id)
+
+    auth_username = get_jwt_identity()
+    all_messages = Message.find_by_listing(listing_id, auth_username)
+    print("ALL MESSAGES: ", all_messages)
+    serialized = [message.serialize() for message in all_messages]
+    return (jsonify(messages=serialized), 200)
 
 
 @app.route('/listings', methods=["POST"])

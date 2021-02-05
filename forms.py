@@ -48,6 +48,7 @@ class MessageCreateForm(FlaskForm):
     body = TextAreaField('Body', validators=[DataRequired()])
     to_user = StringField('to_user', validators=[DataRequired()])
     from_user = StringField('from_user', validators=[DataRequired()])
+    listing_id = IntegerField('listing_id', validators=[DataRequired()])
 
 
 class ListingCreateForm(FlaskForm):
