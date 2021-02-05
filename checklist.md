@@ -19,8 +19,7 @@ TODO List:
     - ~~build out upload files app / capabilities for signup~~
     - build out query endpoint for all messages for one user (inbox & outbox) (lower priority)
     - ~~endpoint for all listings of one user like /user/:id/listings~~
-    - maybe linking Listing to messages 
-    - set up os.environ
+    - ~~linking Listing to messages~~
 - ~~Database storage / S3~~
     - ~~Create bucket sharebnb~~
 - Basic front-end
