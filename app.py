@@ -236,6 +236,16 @@ def user_show(username):
 
     return (jsonify(user=user.serialize()), 200)
 
+@app.route('/users/<username>/listings')
+@jwt_required
+def user_listings(username):
+    """ Show user's created listings """
+
+    user = User.query.get_or_404(username)
+    created_listings = user.created_listings
+    serialized = [listing.serialize(isDetailed=False) for listing in created_listings]
+    return (jsonify(listings=serialized), 200)
+
 @app.route('/users/<username>/edit', methods=["PATCH"])
 @jwt_required
 def user_edit(username):

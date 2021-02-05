@@ -18,7 +18,7 @@ TODO List:
         - ~~query for messages between two users~~
     - ~~build out upload files app / capabilities for signup~~
     - build out query endpoint for all messages for one user (inbox & outbox) (lower priority)
-    - endpoint for all listings of one user like /user/:id/listings
+    - ~~endpoint for all listings of one user like /user/:id/listings~~
     - maybe linking Listing to messages 
     - set up os.environ
 - ~~Database storage / S3~~
