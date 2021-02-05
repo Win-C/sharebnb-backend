@@ -325,23 +325,23 @@ class Listing(db.Model):
         search_query = cls.query
 
         for key in search_params:
-            if key == 'max_price':
+            if key == 'max_price' and search_params.get(key):
                 search_query = search_query.filter(
                     Listing.price < search_params[key]
                     )
-            if key == 'longitude':
+            if key == 'longitude' and search_params.get(key):
                 search_query = search_query.filter(
                     Listing.longitude == search_params[key]
                     )
-            if key == 'latitude':
+            if key == 'latitude' and search_params.get(key):
                 search_query = search_query.filter(
                     Listing.latitude == search_params[key]
                     )
-            if key == 'beds':
+            if key == 'beds' and search_params.get(key):
                 search_query = search_query.filter(
                     Listing.beds == search_params[key]
                     )
-            if key == 'bathrooms':
+            if key == 'bathrooms' and search_params.get(key):
                 search_query = search_query.filter(
                     Listing.bathrooms == search_params[key]
                     )
