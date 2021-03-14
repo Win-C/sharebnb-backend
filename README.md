@@ -18,11 +18,10 @@ TBU with application screenshots
 <img src="/static/images/database-er-diagram.png" width="600" height="500">
 
 - Key relationships:
-    - Each user may have created many listings
-    - Each listing will only have rented to one user (Note: this will be updated once rental dates are incorporated)
-    - Each listing may have many messages
-    - Each user may have sent many messages regarding a listing
-    - Each user may have received many messages regarding a listing
+    - Each user may have created many listings (one-to-many)
+    - Each listing will only have rented to one user (*Note: this will be updated once rental dates are incorporated*)
+    - Each listing may have many messages (one-to-many)
+    - Each user may have sent many messages and received many messages regarding a listing (many-to-many)
 
 ## Build status
 - Proof of concept achieved
