@@ -13,11 +13,16 @@ As we move towards a world where people share more and more things, it’s time 
 ## Screenshots
 TBU with application screenshots
 
-**Database**
+**Database Entity Relationships**
 
 <img src="/static/images/database-er-diagram.png" width="600" height="500">
 
 - Key relationships:
+    - Each user may have created many listings
+    - Each listing will only have rented to one user (Note: this will be updated once rental dates are incorporated)
+    - Each listing may have many messages
+    - Each user may have sent many messages regarding a listing
+    - Each user may have received many messages regarding a listing
 
 ## Build status
 - Proof of concept achieved
@@ -58,7 +63,7 @@ TBU with application screenshots
 - Flask/Python for backend
 - Create-React-App/React for frontend
 
-## Installing
+## Dependencies
 **Backend dependencies** include:
 - awscli
 - bcrypt
@@ -72,9 +77,6 @@ TBU with application screenshots
 - flask-WTForms
 - psycopg2-binary
 
-Install dependencies using requirements.txt from /sharebnb-backend 
-
-
 **Frontend dependencies** include:
 - axios for requests
 - bootstrap for styling
@@ -82,10 +84,26 @@ Install dependencies using requirements.txt from /sharebnb-backend
 - jsonwebtoken for security
 - react-router-dom for routing
 
-Install dependencies using package.json from /sharebnb-frontend/src 
+## Installation
+**App Development Setup**
 
-TBU with a step by step of how to get a development env running
-TBU include example of being able to get data out of the system or little demo
+Create the Python virtual environment and install requirements
+```console
+python3 -m venv venv
+source venv/bin/activate
+(venv) pip3 install -r requirements.txt
+```
+
+Set up the database:
+```console
+(venv) createdb sharebnb
+(venv) python3 seed.py
+```
+
+Start the server:
+```console
+(venv) flask run
+```
 
 ## Testing
 TBU with explanation on how to run the automated tests for the system 
