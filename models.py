@@ -130,7 +130,7 @@ class User(db.Model):
                 return user
 
         return False
-    
+
     def serialize(self):
         """ Serialize User object to dictionary """
 
