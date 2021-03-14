@@ -15,7 +15,7 @@ TBU with application screenshots
 
 **Database**
 
-<img src="/static/images/database-er-diagram.png" width="750" height="250">
+<img src="/static/images/database-er-diagram.png" width="600" height="500">
 
 - Key relationships:
 
