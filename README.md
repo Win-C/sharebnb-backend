@@ -2,9 +2,7 @@
 
 A full stack web application for people to share and rent out their private and public spaces with others. Users create listings that include photos, location, price, # of beds, # of rooms, etc. and are able to search for created listings by price, location, # of beds, and # of bathrooms, etc. Users book listings and message other users regarding a listgin, directly on the platform.  
 
-Check out the deployed app <a href="">here</a>.
-
-Note: the following documentation focuses on the backend. For frontend related documentation and commentary, please go <a href="">here</a> 
+For **frontend** related documentation and commentary, please go <a href="https://github.com/Win-C/jobly-frontend">here</a> 
 
 ## Motivation
 
