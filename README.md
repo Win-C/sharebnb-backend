@@ -1,6 +1,6 @@
 # ShareBnB 
 
-A web application for people to share and rent out their private and public spaces with others. Users create listings that include photos, location, price, # of beds, # of rooms, etc. and are able to search for created listings by price, location, # of beds, and # of bathrooms, etc. Users book listings and message other users regarding a listgin, directly on the platform.  
+A full stack web application for people to share and rent out their private and public spaces with others. Users create listings that include photos, location, price, # of beds, # of rooms, etc. and are able to search for created listings by price, location, # of beds, and # of bathrooms, etc. Users book listings and message other users regarding a listgin, directly on the platform.  
 
 Check out the deployed app <a href="">here</a>.
 
@@ -11,7 +11,6 @@ Note: the following documentation focuses on the backend. For frontend related d
 As we move towards a world where people share more and more things, it’s time we build an application where users can share indoor and outdoor spaces like backyards or pools!
 
 ## Screenshots
-TBU with application screenshots
 
 **Database Entity Relationships**
 
@@ -103,12 +102,6 @@ Start the server:
 ```console
 (venv) flask run
 ```
-
-## Testing
-TBU with explanation on how to run the automated tests for the system 
-
-## Deploying
-TBU with notes about how to deploy this on a live system
 
 ## Authors
 - Winnie Chou
