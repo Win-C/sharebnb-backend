@@ -16,7 +16,6 @@ from upload_functions import (
 
 from forms import (
     UserSignUpForm,
-    UploadForm,  # NOTE: do we need an upload form for validation?
     UserLoginForm,
     UserEditForm,
     ListingSearchForm,
@@ -116,7 +115,7 @@ def protected():
     # if CURR_USER_KEY in session:
     #     g.user = User.query.get(session[CURR_USER_KEY])
     # if request.header.get("authorization", None):
-        # JWT verify the Bearer token
+    # JWT verify the Bearer token
     #     print("set g.user")
     # else:
     #     g.user = None
@@ -147,13 +146,10 @@ def signup():
     """
 
     user_data = request.form
-    print("request.form object = ", request.form)
     file = request.files.get('image_url')
-    print("file = ", file)
     form = UserSignUpForm(formdata=user_data)
 
     if form.validate():
-        print("validated")
         try:
             user = User.signup(form)
             if file and allowed_file(file.filename):
@@ -162,14 +158,15 @@ def signup():
 
                 url = create_presigned_url(BUCKET, filename)
                 user.image_url = url
+
             db.session.commit()
+
             return do_login(user)
-        except IntegrityError as e:
-            print(e)
+
+        except IntegrityError:
             errors = ["Username already taken"]
             return (jsonify(errors=errors), 400)
-        except ClientError as e:
-            print(e)
+        except ClientError:
             errors = ["Failure to upload image"]
             return (jsonify(errors=errors), 400)
     else:
@@ -177,7 +174,6 @@ def signup():
         for field in form:
             for error in field.errors:
                 errors.append(error)
-        print("errors = ", errors)
         return (jsonify(errors=errors), 400)
 
 
