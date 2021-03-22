@@ -67,19 +67,27 @@ class User(db.Model):
         default=False
     )
 
-    created_listings = db.relationship('Listing',
-                                       foreign_keys='Listing.created_by',
-                                       backref="creator")
-    rented_listings = db.relationship('Listing',
-                                      foreign_keys='Listing.rented_by',
-                                      backref="renter")
+    created_listings = db.relationship(
+        'Listing',
+        foreign_keys='Listing.created_by',
+        backref="creator"
+    )
+    rented_listings = db.relationship(
+        'Listing',
+        foreign_keys='Listing.rented_by',
+        backref="renter"
+    )
 
-    sent_messages = db.relationship('Message',
-                                    foreign_keys='Message.from_user',
-                                    backref="sender")
-    received_messages = db.relationship('Message',
-                                        foreign_keys='Message.to_user',
-                                        backref="recipient")
+    sent_messages = db.relationship(
+        'Message',
+        foreign_keys='Message.from_user',
+        backref="sender"
+    )
+    received_messages = db.relationship(
+        'Message',
+        foreign_keys='Message.to_user',
+        backref="recipient"
+    )
 
     def __repr__(self):
         return f"""<User #{self.username}:

@@ -240,7 +240,10 @@ def user_listings(username):
 
     user = User.query.get_or_404(username)
     created_listings = user.created_listings
-    serialized = [listing.serialize(isDetailed=False) for listing in created_listings]
+    serialized = [
+        listing.serialize(isDetailed=False)
+        for listing in created_listings
+    ]
     return (jsonify(listings=serialized), 200)
 
 @app.route('/users/<username>/edit', methods=["PATCH"])
