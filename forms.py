@@ -92,6 +92,6 @@ class ListingSearchForm(FlaskForm):
     bathrooms = IntegerField('bathrooms')
 
 
-class UploadForm(FlaskForm):
-    """ User's image file upload form.  """
-    image_url = FileField('(Optional) Image URL')
+# class UploadForm(FlaskForm):
+#     """ User's image file upload form.  """
+#     image_url = FileField('(Optional) Image URL')
